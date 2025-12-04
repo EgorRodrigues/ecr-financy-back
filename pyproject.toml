@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "ecr-financy-back"
+version = "0.1.0"
+description = "Backend FastAPI com Cassandra para aplicação frontend"
+authors = ["Egor Rodrigues <egorrodrigues@example.com>"]
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+fastapi = "^0.123.5"
+uvicorn = {version = "^0.38.0", extras = ["standard"]}
+cassandra-driver = "^3.29.3"
+pydantic = "^2.12.5"
+pydantic-settings = "^2.12.0"
+python-dotenv = "^1.2.1"
+httpx = "^0.28.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.1"
+ruff = "^0.14.7"
+mypy = "^1.19.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+
+[tool.mypy."cassandra.*"]
+ignore_missing_imports = true
+
+[tool.poetry.scripts]
+serve = "uvicorn:main"
+
