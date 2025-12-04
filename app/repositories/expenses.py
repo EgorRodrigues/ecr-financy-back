@@ -13,6 +13,10 @@ def _prepare(session, name: str, cql: str) -> PreparedStatement:
     return _prepared[name]
 
 
+def _to_date(value):
+    return value.date() if hasattr(value, "date") else value
+
+
 def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
     eid = uuid1()
     now = datetime.utcnow()
@@ -86,9 +90,9 @@ def list_expenses(session, limit: int = 50) -> list[ExpenseOut]:
             id=row.id,
             amount=row.amount,
             status=row.status,
-            issue_date=row.issue_date,
-            due_date=row.due_date,
-            payment_date=row.payment_date,
+            issue_date=_to_date(row.issue_date),
+            due_date=_to_date(row.due_date),
+            payment_date=_to_date(row.payment_date),
             category_id=row.category_id,
             subcategory_id=row.subcategory_id,
             cost_center_id=row.cost_center_id,
@@ -123,9 +127,9 @@ def get_expense(session, eid: UUID) -> ExpenseOut | None:
         id=row.id,
         amount=row.amount,
         status=row.status,
-        issue_date=row.issue_date,
-        due_date=row.due_date,
-        payment_date=row.payment_date,
+        issue_date=_to_date(row.issue_date),
+        due_date=_to_date(row.due_date),
+        payment_date=_to_date(row.payment_date),
         category_id=row.category_id,
         subcategory_id=row.subcategory_id,
         cost_center_id=row.cost_center_id,
