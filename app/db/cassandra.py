@@ -115,6 +115,34 @@ def _ensure_tables(session):
     except Exception:
         pass
 
+    contacts = """
+    CREATE TABLE IF NOT EXISTS contacts (
+        id timeuuid,
+        type text,
+        person_type text,
+        name text,
+        document text,
+        email text,
+        phone_e164 text,
+        phone_local text,
+        address text,
+        notes text,
+        active boolean,
+        created_at timestamp,
+        updated_at timestamp,
+        PRIMARY KEY (id)
+    );
+    """
+    session.execute(contacts)
+    try:
+        session.execute("ALTER TABLE contacts ADD active boolean")
+    except Exception:
+        pass
+    try:
+        session.execute("ALTER TABLE contacts ADD document text")
+    except Exception:
+        pass
+
 
 def ping(session) -> bool:
     try:

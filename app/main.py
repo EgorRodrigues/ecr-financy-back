@@ -8,6 +8,7 @@ from app.routers.transactions import router as transactions_router
 from app.routers.categories import router as categories_router
 from app.routers.subcategories import router as subcategories_router
 from app.routers.cost_centers import router as cost_centers_router
+from app.routers.contacts import router as contacts_router
 
 
 @asynccontextmanager
@@ -38,3 +39,4 @@ app.include_router(transactions_router, prefix="/transactions", tags=["transacti
 app.include_router(categories_router, prefix="/categories", tags=["categories"])
 app.include_router(subcategories_router, prefix="/subcategories", tags=["subcategories"])
 app.include_router(cost_centers_router, prefix="/cost-centers", tags=["cost_centers"])
+app.include_router(contacts_router, prefix="/contacts", tags=["contacts"])
