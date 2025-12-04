@@ -20,33 +20,32 @@ def create(request: Request, payload: CategoryCreate):
     return create_category(session, payload)
 
 
-@router.get("/{user_id}", response_model=list[CategoryOut])
-def list_(request: Request, user_id: UUID, limit: int = 50):
+@router.get("/", response_model=list[CategoryOut])
+def list_(request: Request, limit: int = 50):
     session = request.app.state.cassandra_session
-    return list_categories(session, user_id, limit)
+    return list_categories(session, limit)
 
 
-@router.get("/{user_id}/{category_id}", response_model=CategoryOut)
-def get(request: Request, user_id: UUID, category_id: UUID):
+@router.get("/{category_id}", response_model=CategoryOut)
+def get(request: Request, category_id: UUID):
     session = request.app.state.cassandra_session
-    item = get_category(session, user_id, category_id)
+    item = get_category(session, category_id)
     if not item:
         raise HTTPException(status_code=404, detail="Category not found")
     return item
 
 
-@router.patch("/{user_id}/{category_id}", response_model=CategoryOut)
-def update(request: Request, user_id: UUID, category_id: UUID, payload: CategoryUpdate):
+@router.patch("/{category_id}", response_model=CategoryOut)
+def update(request: Request, category_id: UUID, payload: CategoryUpdate):
     session = request.app.state.cassandra_session
-    item = update_category(session, user_id, category_id, payload)
+    item = update_category(session, category_id, payload)
     if not item:
         raise HTTPException(status_code=404, detail="Category not found")
     return item
 
 
-@router.delete("/{user_id}/{category_id}")
-def delete(request: Request, user_id: UUID, category_id: UUID):
+@router.delete("/{category_id}")
+def delete(request: Request, category_id: UUID):
     session = request.app.state.cassandra_session
-    delete_category(session, user_id, category_id)
+    delete_category(session, category_id)
     return {"deleted": True}
-

@@ -29,10 +29,11 @@ plugins = ["pydantic.mypy"]
 python_version = "3.11"
 strict_optional = true
 warn_unused_ignores = true
+disable_error_code = ["import-untyped"]
 
-[tool.mypy."cassandra.*"]
+[[tool.mypy.overrides]]
+module = "cassandra.*"
 ignore_missing_imports = true
 
 [tool.poetry.scripts]
 serve = "uvicorn:main"
-

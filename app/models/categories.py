@@ -5,21 +5,21 @@ from datetime import datetime
 
 
 class CategoryCreate(BaseModel):
-    user_id: UUID
     name: str
     description: Optional[str] = None
+    active: bool = True
 
 
 class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class CategoryOut(BaseModel):
-    user_id: UUID
     id: UUID
     name: str
     description: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
+    active: bool

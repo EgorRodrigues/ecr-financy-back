@@ -20,33 +20,32 @@ def create(request: Request, payload: CostCenterCreate):
     return create_cost_center(session, payload)
 
 
-@router.get("/{user_id}", response_model=list[CostCenterOut])
-def list_(request: Request, user_id: UUID, limit: int = 50):
+@router.get("/", response_model=list[CostCenterOut])
+def list_(request: Request, limit: int = 50):
     session = request.app.state.cassandra_session
-    return list_cost_centers(session, user_id, limit)
+    return list_cost_centers(session, limit)
 
 
-@router.get("/{user_id}/{cost_center_id}", response_model=CostCenterOut)
-def get(request: Request, user_id: UUID, cost_center_id: UUID):
+@router.get("/{cost_center_id}", response_model=CostCenterOut)
+def get(request: Request, cost_center_id: UUID):
     session = request.app.state.cassandra_session
-    item = get_cost_center(session, user_id, cost_center_id)
+    item = get_cost_center(session, cost_center_id)
     if not item:
         raise HTTPException(status_code=404, detail="Cost center not found")
     return item
 
 
-@router.patch("/{user_id}/{cost_center_id}", response_model=CostCenterOut)
-def update(request: Request, user_id: UUID, cost_center_id: UUID, payload: CostCenterUpdate):
+@router.patch("/{cost_center_id}", response_model=CostCenterOut)
+def update(request: Request, cost_center_id: UUID, payload: CostCenterUpdate):
     session = request.app.state.cassandra_session
-    item = update_cost_center(session, user_id, cost_center_id, payload)
+    item = update_cost_center(session, cost_center_id, payload)
     if not item:
         raise HTTPException(status_code=404, detail="Cost center not found")
     return item
 
 
-@router.delete("/{user_id}/{cost_center_id}")
-def delete(request: Request, user_id: UUID, cost_center_id: UUID):
+@router.delete("/{cost_center_id}")
+def delete(request: Request, cost_center_id: UUID):
     session = request.app.state.cassandra_session
-    delete_cost_center(session, user_id, cost_center_id)
+    delete_cost_center(session, cost_center_id)
     return {"deleted": True}
-

@@ -49,55 +49,71 @@ def _ensure_keyspace(session, keyspace: str):
 def _ensure_tables(session):
     transactions = """
     CREATE TABLE IF NOT EXISTS transactions (
-        user_id uuid,
         id timeuuid,
         amount bigint,
         description text,
         created_at timestamp,
-        PRIMARY KEY ((user_id), id)
-    ) WITH CLUSTERING ORDER BY (id DESC);
+        active boolean,
+        PRIMARY KEY (id)
+    );
     """
     session.execute(transactions)
+    try:
+        session.execute("ALTER TABLE transactions ADD active boolean")
+    except Exception:
+        pass
 
     categories = """
     CREATE TABLE IF NOT EXISTS categories (
-        user_id uuid,
         id timeuuid,
         name text,
         description text,
         created_at timestamp,
         updated_at timestamp,
-        PRIMARY KEY ((user_id), id)
-    ) WITH CLUSTERING ORDER BY (id DESC);
+        active boolean,
+        PRIMARY KEY (id)
+    );
     """
     session.execute(categories)
+    try:
+        session.execute("ALTER TABLE categories ADD active boolean")
+    except Exception:
+        pass
 
     subcategories = """
     CREATE TABLE IF NOT EXISTS subcategories (
-        user_id uuid,
         category_id timeuuid,
         id timeuuid,
         name text,
         description text,
         created_at timestamp,
         updated_at timestamp,
-        PRIMARY KEY ((user_id, category_id), id)
+        active boolean,
+        PRIMARY KEY ((category_id), id)
     ) WITH CLUSTERING ORDER BY (id DESC);
     """
     session.execute(subcategories)
+    try:
+        session.execute("ALTER TABLE subcategories ADD active boolean")
+    except Exception:
+        pass
 
     cost_centers = """
     CREATE TABLE IF NOT EXISTS cost_centers (
-        user_id uuid,
         id timeuuid,
         name text,
         description text,
         created_at timestamp,
         updated_at timestamp,
-        PRIMARY KEY ((user_id), id)
-    ) WITH CLUSTERING ORDER BY (id DESC);
+        active boolean,
+        PRIMARY KEY (id)
+    );
     """
     session.execute(cost_centers)
+    try:
+        session.execute("ALTER TABLE cost_centers ADD active boolean")
+    except Exception:
+        pass
 
 
 def ping(session) -> bool:

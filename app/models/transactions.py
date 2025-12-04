@@ -5,15 +5,14 @@ from datetime import datetime
 
 
 class TransactionCreate(BaseModel):
-    user_id: UUID
     amount: int
     description: Optional[str] = None
+    active: bool = True
 
 
 class TransactionOut(BaseModel):
-    user_id: UUID
     id: UUID
     amount: int
     description: Optional[str] = None
     created_at: datetime
-
+    active: bool

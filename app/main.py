@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.cassandra import connect_cassandra, close_cassandra
 from app.routers.health import router as health_router
@@ -17,7 +18,21 @@ async def lifespan(app: FastAPI):
     close_cassandra(app.state.cassandra_session)
 
 
+origins = ['*']
+
+
 app = FastAPI(title="ECR Financy API", lifespan=lifespan)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=['*'],
+    allow_headers=['*'],
+    allow_credentials=True,
+)
+
+
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(transactions_router, prefix="/transactions", tags=["transactions"])
 app.include_router(categories_router, prefix="/categories", tags=["categories"])
