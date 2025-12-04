@@ -143,6 +143,72 @@ def _ensure_tables(session):
     except Exception:
         pass
 
+    expenses = """
+    CREATE TABLE IF NOT EXISTS expenses (
+        id timeuuid,
+        amount decimal,
+        status text,
+        issue_date date,
+        due_date date,
+        payment_date date,
+        category_id text,
+        subcategory_id text,
+        cost_center_id text,
+        contact_id text,
+        description text,
+        document text,
+        payment_method text,
+        account text,
+        recurrence boolean,
+        competence text,
+        project text,
+        tags list<text>,
+        notes text,
+        active boolean,
+        created_at timestamp,
+        updated_at timestamp,
+        PRIMARY KEY (id)
+    );
+    """
+    session.execute(expenses)
+    try:
+        session.execute("ALTER TABLE expenses ADD active boolean")
+    except Exception:
+        pass
+
+    incomes = """
+    CREATE TABLE IF NOT EXISTS incomes (
+        id timeuuid,
+        amount decimal,
+        status text,
+        issue_date date,
+        due_date date,
+        receipt_date date,
+        category_id text,
+        subcategory_id text,
+        cost_center_id text,
+        contact_id text,
+        description text,
+        document text,
+        receiving_method text,
+        account text,
+        recurrence boolean,
+        competence text,
+        project text,
+        tags list<text>,
+        notes text,
+        active boolean,
+        created_at timestamp,
+        updated_at timestamp,
+        PRIMARY KEY (id)
+    );
+    """
+    session.execute(incomes)
+    try:
+        session.execute("ALTER TABLE incomes ADD active boolean")
+    except Exception:
+        pass
+
 
 def ping(session) -> bool:
     try:
