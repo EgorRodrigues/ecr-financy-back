@@ -35,7 +35,7 @@ def get(request: Request, income_id: UUID):
     return item
 
 
-@router.patch("/{income_id}", response_model=IncomeOut)
+@router.put("/{income_id}", response_model=IncomeOut)
 def update(request: Request, income_id: UUID, payload: IncomeUpdate):
     session = request.app.state.cassandra_session
     item = update_income(session, income_id, payload)

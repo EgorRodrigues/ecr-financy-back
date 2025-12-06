@@ -35,7 +35,7 @@ def get(request: Request, expense_id: UUID):
     return item
 
 
-@router.patch("/{expense_id}", response_model=ExpenseOut)
+@router.put("/{expense_id}", response_model=ExpenseOut)
 def update(request: Request, expense_id: UUID, payload: ExpenseUpdate):
     session = request.app.state.cassandra_session
     item = update_expense(session, expense_id, payload)

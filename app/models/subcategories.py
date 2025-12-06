@@ -25,3 +25,7 @@ class SubcategoryOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     active: bool
+
+
+class SubcategoryMove(BaseModel):
+    new_category_id: UUID

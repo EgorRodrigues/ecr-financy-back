@@ -35,7 +35,7 @@ def get(request: Request, category_id: UUID):
     return item
 
 
-@router.patch("/{category_id}", response_model=CategoryOut)
+@router.put("/{category_id}", response_model=CategoryOut)
 def update(request: Request, category_id: UUID, payload: CategoryUpdate):
     session = request.app.state.cassandra_session
     item = update_category(session, category_id, payload)

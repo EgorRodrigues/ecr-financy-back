@@ -1,5 +1,6 @@
 from cassandra.query import PreparedStatement
 from uuid import UUID, uuid1
+from decimal import Decimal
 from datetime import datetime
 from app.models.expenses import ExpenseCreate, ExpenseUpdate, ExpenseOut
 
@@ -88,7 +89,7 @@ def list_expenses(session, limit: int = 50) -> list[ExpenseOut]:
     return [
         ExpenseOut(
             id=row.id,
-            amount=row.amount,
+            amount=row.amount if row.amount is not None else Decimal('0'),
             status=row.status,
             issue_date=_to_date(row.issue_date),
             due_date=_to_date(row.due_date),
@@ -125,7 +126,7 @@ def get_expense(session, eid: UUID) -> ExpenseOut | None:
         return None
     return ExpenseOut(
         id=row.id,
-        amount=row.amount,
+        amount=row.amount if row.amount is not None else Decimal('0'),
         status=row.status,
         issue_date=_to_date(row.issue_date),
         due_date=_to_date(row.due_date),

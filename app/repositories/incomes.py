@@ -1,5 +1,6 @@
 from cassandra.query import PreparedStatement
 from uuid import UUID, uuid1
+from decimal import Decimal
 from datetime import datetime
 from app.models.incomes import IncomeCreate, IncomeUpdate, IncomeOut
 
@@ -11,6 +12,10 @@ def _prepare(session, name: str, cql: str) -> PreparedStatement:
     if name not in _prepared:
         _prepared[name] = session.prepare(cql)
     return _prepared[name]
+
+
+def _to_date(value):
+    return value.date() if hasattr(value, "date") else value
 
 
 def create_income(session, data: IncomeCreate) -> IncomeOut:
@@ -84,11 +89,11 @@ def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
     return [
         IncomeOut(
             id=row.id,
-            amount=row.amount,
+            amount=row.amount if row.amount is not None else Decimal('0'),
             status=row.status,
-            issue_date=row.issue_date,
-            due_date=row.due_date,
-            receipt_date=row.receipt_date,
+            issue_date=_to_date(row.issue_date),
+            due_date=_to_date(row.due_date),
+            receipt_date=_to_date(row.receipt_date),
             category_id=row.category_id,
             subcategory_id=row.subcategory_id,
             cost_center_id=row.cost_center_id,
@@ -121,11 +126,11 @@ def get_income(session, iid: UUID) -> IncomeOut | None:
         return None
     return IncomeOut(
         id=row.id,
-        amount=row.amount,
+        amount=row.amount if row.amount is not None else Decimal('0'),
         status=row.status,
-        issue_date=row.issue_date,
-        due_date=row.due_date,
-        receipt_date=row.receipt_date,
+        issue_date=_to_date(row.issue_date),
+        due_date=_to_date(row.due_date),
+        receipt_date=_to_date(row.receipt_date),
         category_id=row.category_id,
         subcategory_id=row.subcategory_id,
         cost_center_id=row.cost_center_id,

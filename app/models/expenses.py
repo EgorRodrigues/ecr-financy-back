@@ -1,7 +1,7 @@
 from typing import Optional, Literal, List
 from decimal import Decimal
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from uuid import UUID
 
 
@@ -72,3 +72,7 @@ class ExpenseOut(BaseModel):
     active: bool
     created_at: datetime
     updated_at: datetime
+
+    @field_serializer('amount')
+    def _ser_amount(self, v: Decimal):
+        return float(v)

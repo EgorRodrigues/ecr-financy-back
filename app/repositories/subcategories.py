@@ -1,7 +1,7 @@
 from cassandra.query import PreparedStatement
 from uuid import UUID, uuid1
 from datetime import datetime
-from app.models.subcategories import SubcategoryCreate, SubcategoryUpdate, SubcategoryOut
+from app.models.subcategories import SubcategoryCreate, SubcategoryUpdate, SubcategoryOut, SubcategoryMove
 
 
 _prepared: dict[str, PreparedStatement] = {}
@@ -32,6 +32,27 @@ def list_subcategories(session, category_id: UUID, limit: int = 50) -> list[Subc
         "SELECT category_id, id, name, description, created_at, updated_at, active FROM subcategories WHERE category_id = ? LIMIT ?",
     )
     rows = session.execute(stmt, (category_id, limit))
+    return [
+        SubcategoryOut(
+            category_id=row.category_id,
+            id=row.id,
+            name=row.name,
+            description=row.description,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+            active=row.active,
+        )
+        for row in rows
+    ]
+
+
+def list_all_subcategories(session, limit: int = 50) -> list[SubcategoryOut]:
+    stmt = _prepare(
+        session,
+        "list_all_subcategories",
+        "SELECT category_id, id, name, description, created_at, updated_at, active FROM subcategories LIMIT ?",
+    )
+    rows = session.execute(stmt, (limit,))
     return [
         SubcategoryOut(
             category_id=row.category_id,
@@ -79,3 +100,37 @@ def delete_subcategory(session, category_id: UUID, sid: UUID) -> bool:
     stmt = _prepare(session, "delete_subcategory", "DELETE FROM subcategories WHERE category_id = ? AND id = ?")
     session.execute(stmt, (category_id, sid))
     return True
+
+
+def move_subcategory(session, from_category_id: UUID, sid: UUID, payload: SubcategoryMove) -> SubcategoryOut | None:
+    current = get_subcategory(session, from_category_id, sid)
+    if not current:
+        return None
+    now = datetime.utcnow()
+    stmt_insert = _prepare(
+        session,
+        "insert_subcategory",
+        "INSERT INTO subcategories (category_id, id, name, description, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    )
+    session.execute(
+        stmt_insert,
+        (
+            payload.new_category_id,
+            sid,
+            current.name,
+            current.description,
+            current.created_at,
+            now,
+            current.active,
+        ),
+    )
+    delete_subcategory(session, from_category_id, sid)
+    return SubcategoryOut(
+        category_id=payload.new_category_id,
+        id=sid,
+        name=current.name,
+        description=current.description,
+        created_at=current.created_at,
+        updated_at=now,
+        active=current.active,
+    )

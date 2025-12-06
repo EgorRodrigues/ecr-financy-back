@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException
 from fastapi import Request
 from uuid import UUID
-from app.models.subcategories import SubcategoryCreate, SubcategoryUpdate, SubcategoryOut
+from app.models.subcategories import SubcategoryCreate, SubcategoryUpdate, SubcategoryOut, SubcategoryMove
 from app.repositories.subcategories import (
     create_subcategory,
     list_subcategories,
+    list_all_subcategories,
     get_subcategory,
     update_subcategory,
     delete_subcategory,
+    move_subcategory,
 )
 
 
@@ -18,6 +20,12 @@ router = APIRouter()
 def create(request: Request, payload: SubcategoryCreate):
     session = request.app.state.cassandra_session
     return create_subcategory(session, payload)
+
+
+@router.get("/", response_model=list[SubcategoryOut])
+def list_all(request: Request, limit: int = 50):
+    session = request.app.state.cassandra_session
+    return list_all_subcategories(session, limit)
 
 
 @router.get("/{category_id}", response_model=list[SubcategoryOut])
@@ -35,7 +43,7 @@ def get(request: Request, category_id: UUID, subcategory_id: UUID):
     return item
 
 
-@router.patch("/{category_id}/{subcategory_id}", response_model=SubcategoryOut)
+@router.put("/{category_id}/{subcategory_id}", response_model=SubcategoryOut)
 def update(request: Request, category_id: UUID, subcategory_id: UUID, payload: SubcategoryUpdate):
     session = request.app.state.cassandra_session
     item = update_subcategory(session, category_id, subcategory_id, payload)
@@ -49,3 +57,12 @@ def delete(request: Request, category_id: UUID, subcategory_id: UUID):
     session = request.app.state.cassandra_session
     delete_subcategory(session, category_id, subcategory_id)
     return {"deleted": True}
+
+
+@router.post("/{category_id}/{subcategory_id}/move", response_model=SubcategoryOut)
+def move(request: Request, category_id: UUID, subcategory_id: UUID, payload: SubcategoryMove):
+    session = request.app.state.cassandra_session
+    item = move_subcategory(session, category_id, subcategory_id, payload)
+    if not item:
+        raise HTTPException(status_code=404, detail="Subcategory not found")
+    return item
