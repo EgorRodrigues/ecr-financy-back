@@ -11,6 +11,11 @@ class IncomeCreate(BaseModel):
     issue_date: Optional[date] = None
     due_date: Optional[date] = None
     receipt_date: Optional[date] = None
+    original_amount: Optional[Decimal] = None
+    interest: Optional[Decimal] = None
+    fine: Optional[Decimal] = None
+    discount: Optional[Decimal] = None
+    total_received: Optional[Decimal] = None
     category_id: Optional[str] = None
     subcategory_id: Optional[str] = None
     cost_center_id: Optional[str] = None
@@ -33,6 +38,11 @@ class IncomeUpdate(BaseModel):
     issue_date: Optional[date] = None
     due_date: Optional[date] = None
     receipt_date: Optional[date] = None
+    original_amount: Optional[Decimal] = None
+    interest: Optional[Decimal] = None
+    fine: Optional[Decimal] = None
+    discount: Optional[Decimal] = None
+    total_received: Optional[Decimal] = None
     category_id: Optional[str] = None
     subcategory_id: Optional[str] = None
     cost_center_id: Optional[str] = None
@@ -56,6 +66,11 @@ class IncomeOut(BaseModel):
     issue_date: Optional[date] = None
     due_date: Optional[date] = None
     receipt_date: Optional[date] = None
+    original_amount: Optional[Decimal] = None
+    interest: Optional[Decimal] = None
+    fine: Optional[Decimal] = None
+    discount: Optional[Decimal] = None
+    total_received: Optional[Decimal] = None
     category_id: Optional[str] = None
     subcategory_id: Optional[str] = None
     cost_center_id: Optional[str] = None
@@ -73,6 +88,7 @@ class IncomeOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer('amount')
-    def _ser_amount(self, v: Decimal):
-        return float(v)
+    @field_serializer('amount', 'original_amount', 'interest', 'fine', 'discount', 'total_received')
+    def _ser_amounts(self, v: Decimal | None):
+        from decimal import Decimal as _D
+        return float(v if v is not None else _D('0'))
