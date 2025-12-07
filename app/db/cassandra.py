@@ -242,6 +242,28 @@ def _ensure_tables(session):
         except Exception:
             pass
 
+    accounts = """
+    CREATE TABLE IF NOT EXISTS accounts (
+        id timeuuid,
+        name text,
+        type text,
+        agency text,
+        account text,
+        card_number text,
+        initial_balance decimal,
+        available_limit decimal,
+        created_at timestamp,
+        updated_at timestamp,
+        active boolean,
+        PRIMARY KEY (id)
+    );
+    """
+    session.execute(accounts)
+    try:
+        session.execute("ALTER TABLE accounts ADD active boolean")
+    except Exception:
+        pass
+
 
 def ping(session) -> bool:
     try:

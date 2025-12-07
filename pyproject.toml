@@ -37,3 +37,4 @@ ignore_missing_imports = true
 
 [tool.poetry.scripts]
 serve = "uvicorn:main"
+seed-basics = "app.scripts.seed_basics:main"
