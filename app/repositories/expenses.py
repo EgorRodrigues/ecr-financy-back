@@ -24,7 +24,7 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
     stmt = _prepare(
         session,
         "insert_expense",
-        "INSERT INTO expenses (id, amount, status, issue_date, due_date, payment_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO expenses (id, amount, status, issue_date, due_date, payment_date, original_amount, interest, fine, discount, total_paid, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     session.execute(
         stmt,
@@ -35,6 +35,11 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
             data.issue_date,
             data.due_date,
             data.payment_date,
+            data.original_amount,
+            data.interest,
+            data.fine,
+            data.discount,
+            data.total_paid,
             data.category_id,
             data.subcategory_id,
             data.cost_center_id,
@@ -60,6 +65,11 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
         issue_date=data.issue_date,
         due_date=data.due_date,
         payment_date=data.payment_date,
+        original_amount=data.original_amount,
+        interest=data.interest,
+        fine=data.fine,
+        discount=data.discount,
+        total_paid=data.total_paid,
         category_id=data.category_id,
         subcategory_id=data.subcategory_id,
         cost_center_id=data.cost_center_id,
@@ -83,7 +93,7 @@ def list_expenses(session, limit: int = 50) -> list[ExpenseOut]:
     stmt = _prepare(
         session,
         "list_expenses",
-        "SELECT id, amount, status, issue_date, due_date, payment_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM expenses LIMIT ?",
+        "SELECT id, amount, status, issue_date, due_date, payment_date, original_amount, interest, fine, discount, total_paid, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM expenses LIMIT ?",
     )
     rows = session.execute(stmt, (limit,))
     return [
@@ -94,6 +104,11 @@ def list_expenses(session, limit: int = 50) -> list[ExpenseOut]:
             issue_date=_to_date(row.issue_date),
             due_date=_to_date(row.due_date),
             payment_date=_to_date(row.payment_date),
+            original_amount=getattr(row, 'original_amount', None),
+            interest=getattr(row, 'interest', None),
+            fine=getattr(row, 'fine', None),
+            discount=getattr(row, 'discount', None),
+            total_paid=getattr(row, 'total_paid', None),
             category_id=row.category_id,
             subcategory_id=row.subcategory_id,
             cost_center_id=row.cost_center_id,
@@ -119,7 +134,7 @@ def get_expense(session, eid: UUID) -> ExpenseOut | None:
     stmt = _prepare(
         session,
         "get_expense",
-        "SELECT id, amount, status, issue_date, due_date, payment_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM expenses WHERE id = ?",
+        "SELECT id, amount, status, issue_date, due_date, payment_date, original_amount, interest, fine, discount, total_paid, category_id, subcategory_id, cost_center_id, contact_id, description, document, payment_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM expenses WHERE id = ?",
     )
     row = session.execute(stmt, (eid,)).one()
     if not row:
@@ -131,6 +146,11 @@ def get_expense(session, eid: UUID) -> ExpenseOut | None:
         issue_date=_to_date(row.issue_date),
         due_date=_to_date(row.due_date),
         payment_date=_to_date(row.payment_date),
+        original_amount=getattr(row, 'original_amount', None),
+        interest=getattr(row, 'interest', None),
+        fine=getattr(row, 'fine', None),
+        discount=getattr(row, 'discount', None),
+        total_paid=getattr(row, 'total_paid', None),
         category_id=row.category_id,
         subcategory_id=row.subcategory_id,
         cost_center_id=row.cost_center_id,
@@ -173,11 +193,16 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
     new_tags = data.tags if data.tags is not None else current.tags
     new_notes = data.notes if data.notes is not None else current.notes
     new_active = data.active if data.active is not None else current.active
+    new_original_amount = data.original_amount if data.original_amount is not None else current.original_amount
+    new_interest = data.interest if data.interest is not None else current.interest
+    new_fine = data.fine if data.fine is not None else current.fine
+    new_discount = data.discount if data.discount is not None else current.discount
+    new_total_paid = data.total_paid if data.total_paid is not None else current.total_paid
     now = datetime.utcnow()
     stmt = _prepare(
         session,
         "update_expense",
-        "UPDATE expenses SET amount = ?, status = ?, issue_date = ?, due_date = ?, payment_date = ?, category_id = ?, subcategory_id = ?, cost_center_id = ?, contact_id = ?, description = ?, document = ?, payment_method = ?, account = ?, recurrence = ?, competence = ?, project = ?, tags = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
+        "UPDATE expenses SET amount = ?, status = ?, issue_date = ?, due_date = ?, payment_date = ?, original_amount = ?, interest = ?, fine = ?, discount = ?, total_paid = ?, category_id = ?, subcategory_id = ?, cost_center_id = ?, contact_id = ?, description = ?, document = ?, payment_method = ?, account = ?, recurrence = ?, competence = ?, project = ?, tags = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
     )
     session.execute(
         stmt,
@@ -187,6 +212,11 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
             new_issue_date,
             new_due_date,
             new_payment_date,
+            new_original_amount,
+            new_interest,
+            new_fine,
+            new_discount,
+            new_total_paid,
             new_category_id,
             new_subcategory_id,
             new_cost_center_id,
@@ -212,6 +242,11 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
         issue_date=new_issue_date,
         due_date=new_due_date,
         payment_date=new_payment_date,
+        original_amount=new_original_amount,
+        interest=new_interest,
+        fine=new_fine,
+        discount=new_discount,
+        total_paid=new_total_paid,
         category_id=new_category_id,
         subcategory_id=new_subcategory_id,
         cost_center_id=new_cost_center_id,

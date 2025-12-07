@@ -24,7 +24,7 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
     stmt = _prepare(
         session,
         "insert_income",
-        "INSERT INTO incomes (id, amount, status, issue_date, due_date, receipt_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO incomes (id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     session.execute(
         stmt,
@@ -35,6 +35,11 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
             data.issue_date,
             data.due_date,
             data.receipt_date,
+            data.original_amount,
+            data.interest,
+            data.fine,
+            data.discount,
+            data.total_received,
             data.category_id,
             data.subcategory_id,
             data.cost_center_id,
@@ -60,6 +65,11 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
         issue_date=data.issue_date,
         due_date=data.due_date,
         receipt_date=data.receipt_date,
+        original_amount=data.original_amount,
+        interest=data.interest,
+        fine=data.fine,
+        discount=data.discount,
+        total_received=data.total_received,
         category_id=data.category_id,
         subcategory_id=data.subcategory_id,
         cost_center_id=data.cost_center_id,
@@ -83,7 +93,7 @@ def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
     stmt = _prepare(
         session,
         "list_incomes",
-        "SELECT id, amount, status, issue_date, due_date, receipt_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes LIMIT ?",
+        "SELECT id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes LIMIT ?",
     )
     rows = session.execute(stmt, (limit,))
     return [
@@ -94,6 +104,11 @@ def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
             issue_date=_to_date(row.issue_date),
             due_date=_to_date(row.due_date),
             receipt_date=_to_date(row.receipt_date),
+            original_amount=getattr(row, 'original_amount', None),
+            interest=getattr(row, 'interest', None),
+            fine=getattr(row, 'fine', None),
+            discount=getattr(row, 'discount', None),
+            total_received=getattr(row, 'total_received', None),
             category_id=row.category_id,
             subcategory_id=row.subcategory_id,
             cost_center_id=row.cost_center_id,
@@ -119,7 +134,7 @@ def get_income(session, iid: UUID) -> IncomeOut | None:
     stmt = _prepare(
         session,
         "get_income",
-        "SELECT id, amount, status, issue_date, due_date, receipt_date, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes WHERE id = ?",
+        "SELECT id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes WHERE id = ?",
     )
     row = session.execute(stmt, (iid,)).one()
     if not row:
@@ -131,6 +146,11 @@ def get_income(session, iid: UUID) -> IncomeOut | None:
         issue_date=_to_date(row.issue_date),
         due_date=_to_date(row.due_date),
         receipt_date=_to_date(row.receipt_date),
+        original_amount=getattr(row, 'original_amount', None),
+        interest=getattr(row, 'interest', None),
+        fine=getattr(row, 'fine', None),
+        discount=getattr(row, 'discount', None),
+        total_received=getattr(row, 'total_received', None),
         category_id=row.category_id,
         subcategory_id=row.subcategory_id,
         cost_center_id=row.cost_center_id,
@@ -173,11 +193,16 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
     new_tags = data.tags if data.tags is not None else current.tags
     new_notes = data.notes if data.notes is not None else current.notes
     new_active = data.active if data.active is not None else current.active
+    new_original_amount = data.original_amount if data.original_amount is not None else current.original_amount
+    new_interest = data.interest if data.interest is not None else current.interest
+    new_fine = data.fine if data.fine is not None else current.fine
+    new_discount = data.discount if data.discount is not None else current.discount
+    new_total_received = data.total_received if data.total_received is not None else current.total_received
     now = datetime.utcnow()
     stmt = _prepare(
         session,
         "update_income",
-        "UPDATE incomes SET amount = ?, status = ?, issue_date = ?, due_date = ?, receipt_date = ?, category_id = ?, subcategory_id = ?, cost_center_id = ?, contact_id = ?, description = ?, document = ?, receiving_method = ?, account = ?, recurrence = ?, competence = ?, project = ?, tags = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
+        "UPDATE incomes SET amount = ?, status = ?, issue_date = ?, due_date = ?, receipt_date = ?, original_amount = ?, interest = ?, fine = ?, discount = ?, total_received = ?, category_id = ?, subcategory_id = ?, cost_center_id = ?, contact_id = ?, description = ?, document = ?, receiving_method = ?, account = ?, recurrence = ?, competence = ?, project = ?, tags = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
     )
     session.execute(
         stmt,
@@ -187,6 +212,11 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
             new_issue_date,
             new_due_date,
             new_receipt_date,
+            new_original_amount,
+            new_interest,
+            new_fine,
+            new_discount,
+            new_total_received,
             new_category_id,
             new_subcategory_id,
             new_cost_center_id,
@@ -212,6 +242,11 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
         issue_date=new_issue_date,
         due_date=new_due_date,
         receipt_date=new_receipt_date,
+        original_amount=new_original_amount,
+        interest=new_interest,
+        fine=new_fine,
+        discount=new_discount,
+        total_received=new_total_received,
         category_id=new_category_id,
         subcategory_id=new_subcategory_id,
         cost_center_id=new_cost_center_id,

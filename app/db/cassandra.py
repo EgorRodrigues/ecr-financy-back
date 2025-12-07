@@ -151,6 +151,11 @@ def _ensure_tables(session):
         issue_date date,
         due_date date,
         payment_date date,
+        original_amount decimal,
+        interest decimal,
+        fine decimal,
+        discount decimal,
+        total_paid decimal,
         category_id text,
         subcategory_id text,
         cost_center_id text,
@@ -175,6 +180,18 @@ def _ensure_tables(session):
         session.execute("ALTER TABLE expenses ADD active boolean")
     except Exception:
         pass
+    # Ensure newly added payment fields exist even if table already created previously
+    for stmt in [
+        "ALTER TABLE expenses ADD original_amount decimal",
+        "ALTER TABLE expenses ADD interest decimal",
+        "ALTER TABLE expenses ADD fine decimal",
+        "ALTER TABLE expenses ADD discount decimal",
+        "ALTER TABLE expenses ADD total_paid decimal",
+    ]:
+        try:
+            session.execute(stmt)
+        except Exception:
+            pass
 
     incomes = """
     CREATE TABLE IF NOT EXISTS incomes (
@@ -184,6 +201,11 @@ def _ensure_tables(session):
         issue_date date,
         due_date date,
         receipt_date date,
+        original_amount decimal,
+        interest decimal,
+        fine decimal,
+        discount decimal,
+        total_received decimal,
         category_id text,
         subcategory_id text,
         cost_center_id text,
@@ -208,6 +230,17 @@ def _ensure_tables(session):
         session.execute("ALTER TABLE incomes ADD active boolean")
     except Exception:
         pass
+    for stmt in [
+        "ALTER TABLE incomes ADD original_amount decimal",
+        "ALTER TABLE incomes ADD interest decimal",
+        "ALTER TABLE incomes ADD fine decimal",
+        "ALTER TABLE incomes ADD discount decimal",
+        "ALTER TABLE incomes ADD total_received decimal",
+    ]:
+        try:
+            session.execute(stmt)
+        except Exception:
+            pass
 
 
 def ping(session) -> bool:
