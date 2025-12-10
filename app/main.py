@@ -12,6 +12,7 @@ from app.routers.contacts import router as contacts_router
 from app.routers.expenses import router as expenses_router
 from app.routers.incomes import router as incomes_router
 from app.routers.accounts import router as accounts_router
+from app.routers.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -46,3 +47,4 @@ app.include_router(contacts_router, prefix="/contacts", tags=["contacts"])
 app.include_router(expenses_router, prefix="/expenses", tags=["expenses"])
 app.include_router(incomes_router, prefix="/incomes", tags=["incomes"])
 app.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
+app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])

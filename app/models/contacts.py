@@ -52,7 +52,7 @@ class ContactCreate(BaseModel):
     type: Literal["customer", "supplier"]
     person_type: Literal["individual", "company"] | str
     name: str
-    document: str
+    document: Optional[str] = None
     email: Optional[str] = None
     phone_e164: Optional[str] = None
     phone_local: Optional[str] = None
@@ -72,6 +72,8 @@ class ContactCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_document(self):
+        if self.document is None:
+            return self
         if self.person_type == "individual":
             if not _cpf_valid(self.document):
                 raise ValueError("invalid CPF for individual")
