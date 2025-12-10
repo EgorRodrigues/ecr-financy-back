@@ -1,48 +1,35 @@
-from cassandra.query import PreparedStatement
-from uuid import UUID, uuid1
-from datetime import datetime
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
+from sqlalchemy import select, insert, update, delete
 from app.models.contacts import ContactCreate, ContactUpdate, ContactOut
-
-
-_prepared: dict[str, PreparedStatement] = {}
-
-
-def _prepare(session, name: str, cql: str) -> PreparedStatement:
-    if name not in _prepared:
-        _prepared[name] = session.prepare(cql)
-    return _prepared[name]
+from app.db.postgres import contacts
 
 
 def create_contact(session, data: ContactCreate) -> ContactOut:
-    cid = uuid1()
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "insert_contact",
-        "INSERT INTO contacts (id, type, person_type, name, document, email, phone_e164, phone_local, address, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
+    cid = uuid4()
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            cid,
-            data.type,
-            data.person_type,
-            data.name,
-            data.document,
-            data.email,
-            data.phone_e164,
-            data.phone_local,
-            data.address,
-            data.notes,
-            data.active,
-            now,
-            now,
-        ),
+        insert(contacts).values(
+            id=cid,
+            type=data.type,
+            person_type=data.person_type,
+            name=data.name,
+            document=data.document,
+            email=data.email,
+            phone_e164=data.phone_e164,
+            phone_local=data.phone_local,
+            address=data.address,
+            notes=data.notes,
+            active=data.active,
+            created_at=now,
+            updated_at=now,
+        )
     )
+    session.commit()
     return ContactOut(
         id=cid,
         type=data.type,
-        person_type=data.person_type, 
+        person_type=data.person_type,
         name=data.name,
         document=data.document,
         email=data.email,
@@ -57,12 +44,23 @@ def create_contact(session, data: ContactCreate) -> ContactOut:
 
 
 def list_contacts(session, limit: int = 50) -> list[ContactOut]:
-    stmt = _prepare(
-        session,
-        "list_contacts",
-        "SELECT id, type, person_type, name, document, email, phone_e164, phone_local, address, notes, active, created_at, updated_at FROM contacts LIMIT ?",
-    )
-    rows = session.execute(stmt, (limit,))
+    rows = session.execute(
+        select(
+            contacts.c.id,
+            contacts.c.type,
+            contacts.c.person_type,
+            contacts.c.name,
+            contacts.c.document,
+            contacts.c.email,
+            contacts.c.phone_e164,
+            contacts.c.phone_local,
+            contacts.c.address,
+            contacts.c.notes,
+            contacts.c.active,
+            contacts.c.created_at,
+            contacts.c.updated_at,
+        ).limit(limit)
+    ).all()
     return [
         ContactOut(
             id=row.id,
@@ -84,12 +82,23 @@ def list_contacts(session, limit: int = 50) -> list[ContactOut]:
 
 
 def get_contact(session, cid: UUID) -> ContactOut | None:
-    stmt = _prepare(
-        session,
-        "get_contact",
-        "SELECT id, type, person_type, name, document, email, phone_e164, phone_local, address, notes, active, created_at, updated_at FROM contacts WHERE id = ?",
-    )
-    row = session.execute(stmt, (cid,)).one()
+    row = session.execute(
+        select(
+            contacts.c.id,
+            contacts.c.type,
+            contacts.c.person_type,
+            contacts.c.name,
+            contacts.c.document,
+            contacts.c.email,
+            contacts.c.phone_e164,
+            contacts.c.phone_local,
+            contacts.c.address,
+            contacts.c.notes,
+            contacts.c.active,
+            contacts.c.created_at,
+            contacts.c.updated_at,
+        ).where(contacts.c.id == cid)
+    ).one_or_none()
     if not row:
         return None
     return ContactOut(
@@ -123,29 +132,25 @@ def update_contact(session, cid: UUID, data: ContactUpdate) -> ContactOut | None
     new_address = data.address if data.address is not None else current.address
     new_notes = data.notes if data.notes is not None else current.notes
     new_active = data.active if data.active is not None else current.active
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "update_contact",
-        "UPDATE contacts SET type = ?, person_type = ?, name = ?, document = ?, email = ?, phone_e164 = ?, phone_local = ?, address = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
-    )
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            new_type,
-            new_person_type,
-            new_name,
-            new_document,
-            new_email,
-            new_phone_e164,
-            new_phone_local,
-            new_address,
-            new_notes,
-            new_active,
-            now,
-            cid,
-        ),
+        update(contacts)
+        .where(contacts.c.id == cid)
+        .values(
+            type=new_type,
+            person_type=new_person_type,
+            name=new_name,
+            document=new_document,
+            email=new_email,
+            phone_e164=new_phone_e164,
+            phone_local=new_phone_local,
+            address=new_address,
+            notes=new_notes,
+            active=new_active,
+            updated_at=now,
+        )
     )
+    session.commit()
     return ContactOut(
         id=cid,
         type=new_type,
@@ -164,6 +169,6 @@ def update_contact(session, cid: UUID, data: ContactUpdate) -> ContactOut | None
 
 
 def delete_contact(session, cid: UUID) -> bool:
-    stmt = _prepare(session, "delete_contact", "DELETE FROM contacts WHERE id = ?")
-    session.execute(stmt, (cid,))
+    session.execute(delete(contacts).where(contacts.c.id == cid))
+    session.commit()
     return True

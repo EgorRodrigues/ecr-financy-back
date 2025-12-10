@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     cassandra_username: Optional[str] = None
     cassandra_password: Optional[str] = None
     cassandra_consistency: str = "LOCAL_QUORUM"
+    postgres_host: Optional[str] = "127.0.0.1"
+    postgres_port: Optional[int] = 5432
+    postgres_database: Optional[str] = "ecr_financy"
+    postgres_username: Optional[str] = "postgres"
+    postgres_password: Optional[str] = "postgres"
 
 
 settings = Settings()
-

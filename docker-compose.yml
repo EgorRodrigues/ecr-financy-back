@@ -1,17 +1,16 @@
 version: "3.9"
 services:
-  cassandra:
-    image: cassandra:4.1
-    container_name: ecr-cassandra
+  postgres:
+    image: postgres:16
+    container_name: ecr-postgres
     ports:
-      - "9042:9042"
+      - "5432:5432"
     environment:
-      - CASSANDRA_CLUSTER_NAME=ecr-cluster
-      - CASSANDRA_NUM_TOKENS=128
-      - CASSANDRA_AUTHENTICATOR=PasswordAuthenticator
-      - CASSANDRA_AUTHORIZER=CassandraAuthorizer
+      - POSTGRES_DB=ecr_financy
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     healthcheck:
-      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecr_financy"]
       interval: 10s
       timeout: 5s
       retries: 20

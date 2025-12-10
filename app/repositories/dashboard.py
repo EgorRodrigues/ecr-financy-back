@@ -1,16 +1,8 @@
-from cassandra.query import PreparedStatement
 from decimal import Decimal
 from datetime import datetime, date
+from sqlalchemy import select
 from app.models.dashboard import DashboardOut, BigNumbers, MonthlyItem, RecentTransaction
-
-
-_prepared: dict[str, PreparedStatement] = {}
-
-
-def _prepare(session, name: str, cql: str) -> PreparedStatement:
-    if name not in _prepared:
-        _prepared[name] = session.prepare(cql)
-    return _prepared[name]
+from app.db.postgres import incomes, expenses
 
 
 def _to_date(value):
@@ -42,18 +34,36 @@ def _expense_status_en(s: str) -> str:
 
 
 def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> DashboardOut:
-    stmt_incomes = _prepare(
-        session,
-        "dashboard_incomes",
-        "SELECT id, amount, status, description, issue_date, due_date, receipt_date, total_received, created_at FROM incomes LIMIT ?",
+    incomes_rows = list(
+        session.execute(
+            select(
+                incomes.c.id,
+                incomes.c.amount,
+                incomes.c.status,
+                incomes.c.description,
+                incomes.c.issue_date,
+                incomes.c.due_date,
+                incomes.c.receipt_date,
+                incomes.c.total_received,
+                incomes.c.created_at,
+            ).limit(1000)
+        )
     )
-    stmt_expenses = _prepare(
-        session,
-        "dashboard_expenses",
-        "SELECT id, amount, status, description, issue_date, due_date, payment_date, total_paid, created_at FROM expenses LIMIT ?",
+    expenses_rows = list(
+        session.execute(
+            select(
+                expenses.c.id,
+                expenses.c.amount,
+                expenses.c.status,
+                expenses.c.description,
+                expenses.c.issue_date,
+                expenses.c.due_date,
+                expenses.c.payment_date,
+                expenses.c.total_paid,
+                expenses.c.created_at,
+            ).limit(1000)
+        )
     )
-    incomes_rows = list(session.execute(stmt_incomes, (1000,)))
-    expenses_rows = list(session.execute(stmt_expenses, (1000,)))
 
     approved = 0
     pending = 0
@@ -127,4 +137,3 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
 
     bn = BigNumbers(balance=balance, approved=approved, pending=pending, failed=failed)
     return DashboardOut(big_numbers=bn, monthly=monthly, recent_transactions=recent_transactions)
-

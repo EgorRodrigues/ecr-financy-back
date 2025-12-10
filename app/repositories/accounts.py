@@ -1,42 +1,29 @@
-from cassandra.query import PreparedStatement
-from uuid import UUID, uuid1
-from datetime import datetime
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
+from sqlalchemy import select, insert, update, delete
 from app.models.accounts import AccountCreate, AccountUpdate, AccountOut
-
-
-_prepared: dict[str, PreparedStatement] = {}
-
-
-def _prepare(session, name: str, cql: str) -> PreparedStatement:
-    if name not in _prepared:
-        _prepared[name] = session.prepare(cql)
-    return _prepared[name]
+from app.db.postgres import accounts
 
 
 def create_account(session, data: AccountCreate) -> AccountOut:
-    aid = uuid1()
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "insert_account",
-        "INSERT INTO accounts (id, name, type, agency, account, card_number, initial_balance, available_limit, created_at, updated_at, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
+    aid = uuid4()
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            aid,
-            data.name,
-            data.type,
-            data.agency,
-            data.account,
-            data.card_number,
-            data.initial_balance,
-            data.available_limit,
-            now,
-            now,
-            data.active,
-        ),
+        insert(accounts).values(
+            id=aid,
+            name=data.name,
+            type=data.type,
+            agency=data.agency,
+            account=data.account,
+            card_number=data.card_number,
+            initial_balance=data.initial_balance,
+            available_limit=data.available_limit,
+            created_at=now,
+            updated_at=now,
+            active=data.active,
+        )
     )
+    session.commit()
     return AccountOut(
         id=aid,
         name=data.name,
@@ -53,12 +40,21 @@ def create_account(session, data: AccountCreate) -> AccountOut:
 
 
 def list_accounts(session, limit: int = 50) -> list[AccountOut]:
-    stmt = _prepare(
-        session,
-        "list_accounts",
-        "SELECT id, name, type, agency, account, card_number, initial_balance, available_limit, created_at, updated_at, active FROM accounts LIMIT ?",
-    )
-    rows = session.execute(stmt, (limit,))
+    rows = session.execute(
+        select(
+            accounts.c.id,
+            accounts.c.name,
+            accounts.c.type,
+            accounts.c.agency,
+            accounts.c.account,
+            accounts.c.card_number,
+            accounts.c.initial_balance,
+            accounts.c.available_limit,
+            accounts.c.created_at,
+            accounts.c.updated_at,
+            accounts.c.active,
+        ).limit(limit)
+    ).all()
     return [
         AccountOut(
             id=row.id,
@@ -78,12 +74,21 @@ def list_accounts(session, limit: int = 50) -> list[AccountOut]:
 
 
 def get_account(session, aid: UUID) -> AccountOut | None:
-    stmt = _prepare(
-        session,
-        "get_account",
-        "SELECT id, name, type, agency, account, card_number, initial_balance, available_limit, created_at, updated_at, active FROM accounts WHERE id = ?",
-    )
-    row = session.execute(stmt, (aid,)).one()
+    row = session.execute(
+        select(
+            accounts.c.id,
+            accounts.c.name,
+            accounts.c.type,
+            accounts.c.agency,
+            accounts.c.account,
+            accounts.c.card_number,
+            accounts.c.initial_balance,
+            accounts.c.available_limit,
+            accounts.c.created_at,
+            accounts.c.updated_at,
+            accounts.c.active,
+        ).where(accounts.c.id == aid)
+    ).one_or_none()
     if not row:
         return None
     return AccountOut(
@@ -113,27 +118,23 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
     new_initial = data.initial_balance if data.initial_balance is not None else current.initial_balance
     new_limit = data.available_limit if data.available_limit is not None else current.available_limit
     new_active = data.active if data.active is not None else current.active
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "update_account",
-        "UPDATE accounts SET name = ?, type = ?, agency = ?, account = ?, card_number = ?, initial_balance = ?, available_limit = ?, active = ?, updated_at = ? WHERE id = ?",
-    )
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            new_name,
-            new_type,
-            new_agency,
-            new_account,
-            new_card,
-            new_initial,
-            new_limit,
-            new_active,
-            now,
-            aid,
-        ),
+        update(accounts)
+        .where(accounts.c.id == aid)
+        .values(
+            name=new_name,
+            type=new_type,
+            agency=new_agency,
+            account=new_account,
+            card_number=new_card,
+            initial_balance=new_initial,
+            available_limit=new_limit,
+            active=new_active,
+            updated_at=now,
+        )
     )
+    session.commit()
     return AccountOut(
         id=aid,
         name=new_name,
@@ -150,6 +151,6 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
 
 
 def delete_account(session, aid: UUID) -> bool:
-    stmt = _prepare(session, "delete_account", "DELETE FROM accounts WHERE id = ?")
-    session.execute(stmt, (aid,))
+    session.execute(delete(accounts).where(accounts.c.id == aid))
+    session.commit()
     return True

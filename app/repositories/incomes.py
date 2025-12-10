@@ -1,17 +1,9 @@
-from cassandra.query import PreparedStatement
-from uuid import UUID, uuid1
+from uuid import UUID, uuid4
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
+from sqlalchemy import select, insert, update, delete
 from app.models.incomes import IncomeCreate, IncomeUpdate, IncomeOut
-
-
-_prepared: dict[str, PreparedStatement] = {}
-
-
-def _prepare(session, name: str, cql: str) -> PreparedStatement:
-    if name not in _prepared:
-        _prepared[name] = session.prepare(cql)
-    return _prepared[name]
+from app.db.postgres import incomes
 
 
 def _to_date(value):
@@ -19,45 +11,40 @@ def _to_date(value):
 
 
 def create_income(session, data: IncomeCreate) -> IncomeOut:
-    iid = uuid1()
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "insert_income",
-        "INSERT INTO incomes (id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    )
+    iid = uuid4()
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            iid,
-            data.amount,
-            data.status,
-            data.issue_date,
-            data.due_date,
-            data.receipt_date,
-            data.original_amount,
-            data.interest,
-            data.fine,
-            data.discount,
-            data.total_received,
-            data.category_id,
-            data.subcategory_id,
-            data.cost_center_id,
-            data.contact_id,
-            data.description,
-            data.document,
-            data.receiving_method,
-            data.account,
-            data.recurrence,
-            data.competence,
-            data.project,
-            data.tags,
-            data.notes,
-            data.active,
-            now,
-            now,
-        ),
+        insert(incomes).values(
+            id=iid,
+            amount=data.amount,
+            status=data.status,
+            issue_date=data.issue_date,
+            due_date=data.due_date,
+            receipt_date=data.receipt_date,
+            original_amount=data.original_amount,
+            interest=data.interest,
+            fine=data.fine,
+            discount=data.discount,
+            total_received=data.total_received,
+            category_id=data.category_id,
+            subcategory_id=data.subcategory_id,
+            cost_center_id=data.cost_center_id,
+            contact_id=data.contact_id,
+            description=data.description,
+            document=data.document,
+            receiving_method=data.receiving_method,
+            account=data.account,
+            recurrence=data.recurrence,
+            competence=data.competence,
+            project=data.project,
+            tags=data.tags,
+            notes=data.notes,
+            active=data.active,
+            created_at=now,
+            updated_at=now,
+        )
     )
+    session.commit()
     return IncomeOut(
         id=iid,
         amount=data.amount,
@@ -90,12 +77,37 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
 
 
 def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
-    stmt = _prepare(
-        session,
-        "list_incomes",
-        "SELECT id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes LIMIT ?",
-    )
-    rows = session.execute(stmt, (limit,))
+    rows = session.execute(
+        select(
+            incomes.c.id,
+            incomes.c.amount,
+            incomes.c.status,
+            incomes.c.issue_date,
+            incomes.c.due_date,
+            incomes.c.receipt_date,
+            incomes.c.original_amount,
+            incomes.c.interest,
+            incomes.c.fine,
+            incomes.c.discount,
+            incomes.c.total_received,
+            incomes.c.category_id,
+            incomes.c.subcategory_id,
+            incomes.c.cost_center_id,
+            incomes.c.contact_id,
+            incomes.c.description,
+            incomes.c.document,
+            incomes.c.receiving_method,
+            incomes.c.account,
+            incomes.c.recurrence,
+            incomes.c.competence,
+            incomes.c.project,
+            incomes.c.tags,
+            incomes.c.notes,
+            incomes.c.active,
+            incomes.c.created_at,
+            incomes.c.updated_at,
+        ).limit(limit)
+    ).all()
     return [
         IncomeOut(
             id=row.id,
@@ -104,11 +116,11 @@ def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
             issue_date=_to_date(row.issue_date),
             due_date=_to_date(row.due_date),
             receipt_date=_to_date(row.receipt_date),
-            original_amount=getattr(row, 'original_amount', None),
-            interest=getattr(row, 'interest', None),
-            fine=getattr(row, 'fine', None),
-            discount=getattr(row, 'discount', None),
-            total_received=getattr(row, 'total_received', None),
+            original_amount=row.original_amount,
+            interest=row.interest,
+            fine=row.fine,
+            discount=row.discount,
+            total_received=row.total_received,
             category_id=row.category_id,
             subcategory_id=row.subcategory_id,
             cost_center_id=row.cost_center_id,
@@ -131,12 +143,37 @@ def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
 
 
 def get_income(session, iid: UUID) -> IncomeOut | None:
-    stmt = _prepare(
-        session,
-        "get_income",
-        "SELECT id, amount, status, issue_date, due_date, receipt_date, original_amount, interest, fine, discount, total_received, category_id, subcategory_id, cost_center_id, contact_id, description, document, receiving_method, account, recurrence, competence, project, tags, notes, active, created_at, updated_at FROM incomes WHERE id = ?",
-    )
-    row = session.execute(stmt, (iid,)).one()
+    row = session.execute(
+        select(
+            incomes.c.id,
+            incomes.c.amount,
+            incomes.c.status,
+            incomes.c.issue_date,
+            incomes.c.due_date,
+            incomes.c.receipt_date,
+            incomes.c.original_amount,
+            incomes.c.interest,
+            incomes.c.fine,
+            incomes.c.discount,
+            incomes.c.total_received,
+            incomes.c.category_id,
+            incomes.c.subcategory_id,
+            incomes.c.cost_center_id,
+            incomes.c.contact_id,
+            incomes.c.description,
+            incomes.c.document,
+            incomes.c.receiving_method,
+            incomes.c.account,
+            incomes.c.recurrence,
+            incomes.c.competence,
+            incomes.c.project,
+            incomes.c.tags,
+            incomes.c.notes,
+            incomes.c.active,
+            incomes.c.created_at,
+            incomes.c.updated_at,
+        ).where(incomes.c.id == iid)
+    ).one_or_none()
     if not row:
         return None
     return IncomeOut(
@@ -146,11 +183,11 @@ def get_income(session, iid: UUID) -> IncomeOut | None:
         issue_date=_to_date(row.issue_date),
         due_date=_to_date(row.due_date),
         receipt_date=_to_date(row.receipt_date),
-        original_amount=getattr(row, 'original_amount', None),
-        interest=getattr(row, 'interest', None),
-        fine=getattr(row, 'fine', None),
-        discount=getattr(row, 'discount', None),
-        total_received=getattr(row, 'total_received', None),
+        original_amount=row.original_amount,
+        interest=row.interest,
+        fine=row.fine,
+        discount=row.discount,
+        total_received=row.total_received,
         category_id=row.category_id,
         subcategory_id=row.subcategory_id,
         cost_center_id=row.cost_center_id,
@@ -198,43 +235,39 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
     new_fine = data.fine if data.fine is not None else current.fine
     new_discount = data.discount if data.discount is not None else current.discount
     new_total_received = data.total_received if data.total_received is not None else current.total_received
-    now = datetime.utcnow()
-    stmt = _prepare(
-        session,
-        "update_income",
-        "UPDATE incomes SET amount = ?, status = ?, issue_date = ?, due_date = ?, receipt_date = ?, original_amount = ?, interest = ?, fine = ?, discount = ?, total_received = ?, category_id = ?, subcategory_id = ?, cost_center_id = ?, contact_id = ?, description = ?, document = ?, receiving_method = ?, account = ?, recurrence = ?, competence = ?, project = ?, tags = ?, notes = ?, active = ?, updated_at = ? WHERE id = ?",
-    )
+    now = datetime.now(timezone.utc)
     session.execute(
-        stmt,
-        (
-            new_amount,
-            new_status,
-            new_issue_date,
-            new_due_date,
-            new_receipt_date,
-            new_original_amount,
-            new_interest,
-            new_fine,
-            new_discount,
-            new_total_received,
-            new_category_id,
-            new_subcategory_id,
-            new_cost_center_id,
-            new_contact_id,
-            new_description,
-            new_document,
-            new_receiving_method,
-            new_account,
-            new_recurrence,
-            new_competence,
-            new_project,
-            new_tags,
-            new_notes,
-            new_active,
-            now,
-            iid,
-        ),
+        update(incomes)
+        .where(incomes.c.id == iid)
+        .values(
+            amount=new_amount,
+            status=new_status,
+            issue_date=new_issue_date,
+            due_date=new_due_date,
+            receipt_date=new_receipt_date,
+            original_amount=new_original_amount,
+            interest=new_interest,
+            fine=new_fine,
+            discount=new_discount,
+            total_received=new_total_received,
+            category_id=new_category_id,
+            subcategory_id=new_subcategory_id,
+            cost_center_id=new_cost_center_id,
+            contact_id=new_contact_id,
+            description=new_description,
+            document=new_document,
+            receiving_method=new_receiving_method,
+            account=new_account,
+            recurrence=new_recurrence,
+            competence=new_competence,
+            project=new_project,
+            tags=new_tags,
+            notes=new_notes,
+            active=new_active,
+            updated_at=now,
+        )
     )
+    session.commit()
     return IncomeOut(
         id=iid,
         amount=new_amount,
@@ -267,6 +300,6 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
 
 
 def delete_income(session, iid: UUID) -> bool:
-    stmt = _prepare(session, "delete_income", "DELETE FROM incomes WHERE id = ?")
-    session.execute(stmt, (iid,))
+    session.execute(delete(incomes).where(incomes.c.id == iid))
+    session.commit()
     return True

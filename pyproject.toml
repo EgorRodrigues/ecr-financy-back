@@ -9,11 +9,13 @@ packages = [{ include = "app" }]
 python = ">=3.11,<4.0"
 fastapi = "^0.123.5"
 uvicorn = {version = "^0.38.0", extras = ["standard"]}
-cassandra-driver = "^3.29.3"
 pydantic = "^2.12.5"
 pydantic-settings = "^2.12.0"
 python-dotenv = "^1.2.1"
 httpx = "^0.28.1"
+sqlalchemy = "^2.0.36"
+psycopg = "^3.2.3"
+alembic = "^1.13.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.1"

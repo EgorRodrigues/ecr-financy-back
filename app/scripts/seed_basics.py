@@ -1,6 +1,6 @@
 from uuid import UUID
 from app.core.config import settings
-from app.db.cassandra import connect_cassandra, close_cassandra
+from app.db.postgres import connect_postgres, close_postgres
 from app.repositories.categories import list_categories, create_category
 from app.repositories.subcategories import list_subcategories, create_subcategory
 from app.models.categories import CategoryCreate
@@ -111,14 +111,14 @@ def _ensure_cost_centers(session) -> None:
 
 
 def main() -> None:
-    session = connect_cassandra(settings)
+    session = connect_postgres(settings)
     try:
         category_ids = _ensure_categories(session)
         _ensure_subcategories(session, category_ids)
         _ensure_cost_centers(session)
         print("Seed concluído com sucesso.")
     finally:
-        close_cassandra(session)
+        close_postgres(session)
 
 
 if __name__ == "__main__":
