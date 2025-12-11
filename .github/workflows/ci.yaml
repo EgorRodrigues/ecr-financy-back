@@ -1,0 +1,61 @@
+name: Lint and Test
+
+on:
+  pull_request:
+    branches: [homolog, main-test]
+
+jobs:
+  lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install pipx
+          pipx install poetry
+          poetry add ruff
+
+      - name: Run Ruff
+        run: |
+          poetry run ruff check .
+
+  test:
+    name: Pytest + Coverage
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: "sqlite+aiosqlite:///./test.db"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          pip install pipx
+          pipx install poetry
+          poetry install --no-root
+
+      - name: Run tests with coverage
+        run: |
+          poetry run pytest --cov=app --cov-report=xml --cov-fail-under=80
+
+      - name: Upload coverage report (opcional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml

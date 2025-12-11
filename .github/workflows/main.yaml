@@ -1,0 +1,63 @@
+name: Deploy to Cloud Run - production
+
+on:
+  push:
+    branches:
+      - main
+env:
+  ZONE: us-central1-a
+  REGION: us-central1
+  PROJECT_ID: makasi-data-production
+  SERVICE: mks-developer-business
+  PORT: "8000"
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v2"
+        with:
+          install_components: "beta"
+      - name: Build and Push Container
+        run: |-
+          gcloud auth configure-docker
+          docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}" .
+          docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}"
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Google Auth
+        id: auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v2"
+        with:
+          install_components: "beta"
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+          env_vars: |-
+            OTEL_LOGS_EXPORTER=otlp
+          secrets: |-
+            MKS_AUTH_API_PUBLIC_KEY=mks-auth-api-public-key:latest
+            DATABASE_URL=MKS_DEVELOPER_BUSINESS_DATABASE_URL:latest

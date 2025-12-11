@@ -111,7 +111,8 @@ def _ensure_cost_centers(session) -> None:
 
 
 def main() -> None:
-    session = connect_postgres(settings)
+    SessionLocal = connect_postgres(settings)
+    session = SessionLocal()
     try:
         category_ids = _ensure_categories(session)
         _ensure_subcategories(session, category_ids)
