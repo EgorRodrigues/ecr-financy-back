@@ -16,36 +16,41 @@ router = APIRouter()
 
 @router.post("/", response_model=CostCenterOut)
 def create(request: Request, payload: CostCenterCreate):
-    session = request.app.state.cassandra_session
-    return create_cost_center(session, payload)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        return create_cost_center(session, payload)
 
 
 @router.get("/", response_model=list[CostCenterOut])
 def list_(request: Request, limit: int = 50):
-    session = request.app.state.cassandra_session
-    return list_cost_centers(session, limit)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        return list_cost_centers(session, limit)
 
 
 @router.get("/{cost_center_id}", response_model=CostCenterOut)
 def get(request: Request, cost_center_id: UUID):
-    session = request.app.state.cassandra_session
-    item = get_cost_center(session, cost_center_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Cost center not found")
-    return item
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        item = get_cost_center(session, cost_center_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Cost center not found")
+        return item
 
 
 @router.patch("/{cost_center_id}", response_model=CostCenterOut)
 def update(request: Request, cost_center_id: UUID, payload: CostCenterUpdate):
-    session = request.app.state.cassandra_session
-    item = update_cost_center(session, cost_center_id, payload)
-    if not item:
-        raise HTTPException(status_code=404, detail="Cost center not found")
-    return item
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        item = update_cost_center(session, cost_center_id, payload)
+        if not item:
+            raise HTTPException(status_code=404, detail="Cost center not found")
+        return item
 
 
 @router.delete("/{cost_center_id}")
 def delete(request: Request, cost_center_id: UUID):
-    session = request.app.state.cassandra_session
-    delete_cost_center(session, cost_center_id)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        delete_cost_center(session, cost_center_id)
     return {"deleted": True}

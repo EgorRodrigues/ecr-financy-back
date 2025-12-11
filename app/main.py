@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.db.postgres import connect_postgres, close_postgres
+from app.db.postgres import connect_postgres
 from app.routers.health import router as health_router
 from app.routers.transactions import router as transactions_router
 from app.routers.categories import router as categories_router
@@ -17,10 +17,9 @@ from app.routers.dashboard import router as dashboard_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    session = connect_postgres(settings)
-    app.state.cassandra_session = session
+    SessionLocal = connect_postgres(settings)
+    app.state.cassandra_session = SessionLocal
     yield
-    close_postgres(app.state.cassandra_session)
 
 
 origins = ['*']

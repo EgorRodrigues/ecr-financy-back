@@ -16,36 +16,41 @@ router = APIRouter()
 
 @router.post("/", response_model=IncomeOut)
 def create(request: Request, payload: IncomeCreate):
-    session = request.app.state.cassandra_session
-    return create_income(session, payload)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        return create_income(session, payload)
 
 
 @router.get("/", response_model=list[IncomeOut])
 def list_(request: Request, limit: int = 50):
-    session = request.app.state.cassandra_session
-    return list_incomes(session, limit)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        return list_incomes(session, limit)
 
 
 @router.get("/{income_id}", response_model=IncomeOut)
 def get(request: Request, income_id: UUID):
-    session = request.app.state.cassandra_session
-    item = get_income(session, income_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Income not found")
-    return item
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        item = get_income(session, income_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Income not found")
+        return item
 
 
 @router.put("/{income_id}", response_model=IncomeOut)
 def update(request: Request, income_id: UUID, payload: IncomeUpdate):
-    session = request.app.state.cassandra_session
-    item = update_income(session, income_id, payload)
-    if not item:
-        raise HTTPException(status_code=404, detail="Income not found")
-    return item
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        item = update_income(session, income_id, payload)
+        if not item:
+            raise HTTPException(status_code=404, detail="Income not found")
+        return item
 
 
 @router.delete("/{income_id}")
 def delete(request: Request, income_id: UUID):
-    session = request.app.state.cassandra_session
-    delete_income(session, income_id)
+    SessionLocal = request.app.state.cassandra_session
+    with SessionLocal() as session:
+        delete_income(session, income_id)
     return {"deleted": True}

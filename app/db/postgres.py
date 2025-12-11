@@ -160,13 +160,13 @@ def _build_dsn() -> str:
     return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
 
 
-def connect_postgres(_settings) -> Session:
+def connect_postgres(_settings) -> sessionmaker:
     global _engine, _SessionLocal
     if _engine is None:
         dsn = _build_dsn()
         _engine = create_engine(dsn, echo=False, future=True)
         _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False, future=True)
-    return _SessionLocal()
+    return _SessionLocal
 
 
 def close_postgres(session) -> None:

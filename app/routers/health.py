@@ -8,6 +8,9 @@ router = APIRouter()
 
 @router.get("/")
 def health(request: Request):
-    session = getattr(request.app.state, "cassandra_session", None)
-    cassandra_ok = bool(session) and ping(session)
+    SessionLocal = getattr(request.app.state, "cassandra_session", None)
+    if not SessionLocal:
+        return {"status": "ok", "cassandra": False}
+    with SessionLocal() as session:
+        cassandra_ok = ping(session)
     return {"status": "ok", "cassandra": cassandra_ok}
