@@ -38,7 +38,7 @@ def get(request: Request, contact_id: UUID):
         return item
 
 
-@router.patch("/{contact_id}", response_model=ContactOut)
+@router.put("/{contact_id}", response_model=ContactOut)
 def update(request: Request, contact_id: UUID, payload: ContactUpdate):
     SessionLocal = request.app.state.cassandra_session
     with SessionLocal() as session:
