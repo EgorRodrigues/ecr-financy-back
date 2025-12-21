@@ -1,5 +1,5 @@
 from typing import Optional, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from uuid import UUID
 from datetime import datetime
 
@@ -41,3 +41,10 @@ class AccountOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     active: bool
+
+    @field_validator("card_number")
+    @classmethod
+    def mask_card_number(cls, v: str | None) -> str | None:
+        if v and len(v) >= 4:
+            return f"**** **** **** {v[-4:]}"
+        return v
