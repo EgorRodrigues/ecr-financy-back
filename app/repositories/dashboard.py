@@ -126,8 +126,9 @@ def _process_expenses(rows, stats, monthly_map, recent_items):
 
 
 def _build_dashboard_response(stats, monthly_map, recent_items, months, recent_limit):
-    months_sorted = sorted(monthly_map.keys())
-    months_selected = months_sorted[:months] if months > 0 else months_sorted
+    current_month_str = _month_str(datetime.utcnow().date())
+    months_sorted = sorted([m for m in monthly_map.keys() if m <= current_month_str])
+    months_selected = months_sorted[-months:] if months > 0 else months_sorted
     monthly = [
         MonthlyItem(month=m, inflows=monthly_map[m]["inflows"], outflows=monthly_map[m]["outflows"])
         for m in months_selected
