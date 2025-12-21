@@ -33,8 +33,8 @@ def _expense_status_en(s: str) -> str:
     return "failed"
 
 
-def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> DashboardOut:
-    incomes_rows = list(
+def _fetch_incomes(session):
+    return list(
         session.execute(
             select(
                 incomes.c.id,
@@ -49,7 +49,10 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
             ).limit(1000)
         )
     )
-    expenses_rows = list(
+
+
+def _fetch_expenses(session):
+    return list(
         session.execute(
             select(
                 expenses.c.id,
@@ -65,24 +68,18 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
         )
     )
 
-    approved = 0
-    pending = 0
-    failed = 0
-    balance = 0.0
 
-    monthly_map: dict[str, dict[str, float]] = {}
-    recent_items: list[tuple[datetime, RecentTransaction]] = []
-
-    for row in incomes_rows:
+def _process_incomes(rows, stats, monthly_map, recent_items):
+    for row in rows:
         status = getattr(row, "status", "pendente")
         if status == "recebido":
-            approved += 1
-            balance += _dec_to_float(getattr(row, "total_received", None) or getattr(row, "amount", None))
+            stats["approved"] += 1
+            stats["balance"] += _dec_to_float(getattr(row, "total_received", None) or getattr(row, "amount", None))
         elif status == "pendente":
-            pending += 1
+            stats["pending"] += 1
         else:
-            failed += 1
-        dt_index = _to_date(getattr(row, "receipt_date", None)) or _to_date(getattr(row, "issue_date", None)) or _to_date(getattr(row, "created_at", datetime.utcnow()))
+            stats["failed"] += 1
+        dt_index = _to_date(getattr(row, "receipt_date", None)) or _to_date(getattr(row, "due_date", None)) or _to_date(getattr(row, "created_at", datetime.utcnow()))
         ms = _month_str(dt_index)
         mm = monthly_map.get(ms)
         if not mm:
@@ -99,16 +96,18 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
         )
         recent_items.append((getattr(row, "created_at", datetime.utcnow()), rt))
 
-    for row in expenses_rows:
+
+def _process_expenses(rows, stats, monthly_map, recent_items):
+    for row in rows:
         status = getattr(row, "status", "pendente")
         if status == "pago":
-            approved += 1
-            balance -= _dec_to_float(getattr(row, "total_paid", None) or getattr(row, "amount", None))
+            stats["approved"] += 1
+            stats["balance"] -= _dec_to_float(getattr(row, "total_paid", None) or getattr(row, "amount", None))
         elif status == "pendente":
-            pending += 1
+            stats["pending"] += 1
         else:
-            failed += 1
-        dt_index = _to_date(getattr(row, "payment_date", None)) or _to_date(getattr(row, "issue_date", None)) or _to_date(getattr(row, "created_at", datetime.utcnow()))
+            stats["failed"] += 1
+        dt_index = _to_date(getattr(row, "payment_date", None)) or _to_date(getattr(row, "due_date", None)) or _to_date(getattr(row, "created_at", datetime.utcnow()))
         ms = _month_str(dt_index)
         mm = monthly_map.get(ms)
         if not mm:
@@ -125,8 +124,10 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
         )
         recent_items.append((getattr(row, "created_at", datetime.utcnow()), rt))
 
+
+def _build_dashboard_response(stats, monthly_map, recent_items, months, recent_limit):
     months_sorted = sorted(monthly_map.keys())
-    months_selected = months_sorted[-months:] if months > 0 else months_sorted
+    months_selected = months_sorted[:months] if months > 0 else months_sorted
     monthly = [
         MonthlyItem(month=m, inflows=monthly_map[m]["inflows"], outflows=monthly_map[m]["outflows"])
         for m in months_selected
@@ -135,5 +136,19 @@ def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> Dash
     recent_items.sort(key=lambda x: x[0], reverse=True)
     recent_transactions = [ri[1] for ri in recent_items[:recent_limit]]
 
-    bn = BigNumbers(balance=balance, approved=approved, pending=pending, failed=failed)
+    bn = BigNumbers(balance=stats["balance"], approved=stats["approved"], pending=stats["pending"], failed=stats["failed"])
     return DashboardOut(big_numbers=bn, monthly=monthly, recent_transactions=recent_transactions)
+
+
+def get_dashboard_data(session, months: int = 6, recent_limit: int = 10) -> DashboardOut:
+    incomes_rows = _fetch_incomes(session)
+    expenses_rows = _fetch_expenses(session)
+
+    stats = {"approved": 0, "pending": 0, "failed": 0, "balance": 0.0}
+    monthly_map: dict[str, dict[str, float]] = {}
+    recent_items: list[tuple[datetime, RecentTransaction]] = []
+
+    _process_incomes(incomes_rows, stats, monthly_map, recent_items)
+    _process_expenses(expenses_rows, stats, monthly_map, recent_items)
+
+    return _build_dashboard_response(stats, monthly_map, recent_items, months, recent_limit)
