@@ -5,9 +5,9 @@ from pydantic import BaseModel, field_serializer
 from uuid import UUID
 
 
-class ExpenseCreate(BaseModel):
+class CreditCardTransactionCreate(BaseModel):
     amount: Decimal
-    status: Literal["pendente", "pago", "cancelado"]
+    status: Literal["pendente", "pago", "cancelado"] = "pago"
     issue_date: Optional[date] = None
     due_date: Optional[date] = None
     payment_date: Optional[date] = None
@@ -22,7 +22,7 @@ class ExpenseCreate(BaseModel):
     contact_id: Optional[str] = None
     description: Optional[str] = None
     document: Optional[str] = None
-    payment_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]] = None
+    payment_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]] = "credit_card"
     account: Optional[str] = None
     recurrence: Optional[bool] = None
     competence: Optional[str] = None
@@ -32,9 +32,9 @@ class ExpenseCreate(BaseModel):
     active: bool = True
 
 
-class ExpenseUpdate(BaseModel):
+class CreditCardTransactionUpdate(BaseModel):
     amount: Optional[Decimal] = None
-    status: Optional[Literal["pendente", "pago", "cancelado"]] = None
+    status: Optional[Literal["pendente", "pago", "cancelado"]] = "pago"
     issue_date: Optional[date] = None
     due_date: Optional[date] = None
     payment_date: Optional[date] = None
@@ -49,7 +49,7 @@ class ExpenseUpdate(BaseModel):
     contact_id: Optional[str] = None
     description: Optional[str] = None
     document: Optional[str] = None
-    payment_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]] = None
+    payment_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]] = "credit_card"
     account: Optional[str] = None
     recurrence: Optional[bool] = None
     competence: Optional[str] = None
@@ -59,7 +59,7 @@ class ExpenseUpdate(BaseModel):
     active: Optional[bool] = None
 
 
-class ExpenseOut(BaseModel):
+class CreditCardTransactionOut(BaseModel):
     id: UUID
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
@@ -92,3 +92,13 @@ class ExpenseOut(BaseModel):
     def _ser_amounts(self, v: Decimal | None):
         from decimal import Decimal as _D
         return float(v if v is not None else _D('0'))
+
+
+class CreditCardSummary(BaseModel):
+    total_limit: Decimal
+    available_limit: Decimal
+    transactions: List[CreditCardTransactionOut]
+
+    @field_serializer('total_limit', 'available_limit')
+    def _ser_limits(self, v: Decimal):
+        return float(v)

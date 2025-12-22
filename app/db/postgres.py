@@ -151,6 +151,39 @@ transactions = Table(
 )
 
 
+credit_card_transactions = Table(
+    "credit_card_transactions",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    Column("amount", Numeric(18, 2), nullable=False),
+    Column("status", Text, nullable=False),
+    Column("issue_date", Date, nullable=True),
+    Column("due_date", Date, nullable=True),
+    Column("payment_date", Date, nullable=True),
+    Column("original_amount", Numeric(18, 2), nullable=True),
+    Column("interest", Numeric(18, 2), nullable=True),
+    Column("fine", Numeric(18, 2), nullable=True),
+    Column("discount", Numeric(18, 2), nullable=True),
+    Column("total_paid", Numeric(18, 2), nullable=True),
+    Column("category_id", Text, nullable=True),
+    Column("subcategory_id", Text, nullable=True),
+    Column("cost_center_id", Text, nullable=True),
+    Column("contact_id", Text, nullable=True),
+    Column("description", Text, nullable=True),
+    Column("document", Text, nullable=True),
+    Column("payment_method", Text, nullable=True),
+    Column("account", Text, nullable=True),
+    Column("recurrence", Boolean, nullable=True),
+    Column("competence", Text, nullable=True),
+    Column("project", Text, nullable=True),
+    Column("tags", ARRAY(Text), nullable=True),
+    Column("notes", Text, nullable=True),
+    Column("active", Boolean, nullable=False, server_default="true"),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+
 def _build_dsn() -> str:
     user = settings.postgres_username or "postgres"
     password = settings.postgres_password or "postgres"
