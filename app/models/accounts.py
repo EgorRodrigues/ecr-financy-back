@@ -15,7 +15,16 @@ class AccountCreate(BaseModel):
     card_number: Optional[str] = None
     initial_balance: Optional[float] = None
     available_limit: Optional[float] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
     active: bool = True
+
+    @field_validator('closing_day', 'due_day')
+    @classmethod
+    def validate_day(cls, v: int | None) -> int | None:
+        if v is not None and not (1 <= v <= 31):
+            raise ValueError('Day must be between 1 and 31')
+        return v
 
 
 class AccountUpdate(BaseModel):
@@ -26,7 +35,16 @@ class AccountUpdate(BaseModel):
     card_number: Optional[str] = None
     initial_balance: Optional[float] = None
     available_limit: Optional[float] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
     active: Optional[bool] = None
+
+    @field_validator('closing_day', 'due_day')
+    @classmethod
+    def validate_day(cls, v: int | None) -> int | None:
+        if v is not None and not (1 <= v <= 31):
+            raise ValueError('Day must be between 1 and 31')
+        return v
 
 
 class AccountOut(BaseModel):
@@ -38,6 +56,8 @@ class AccountOut(BaseModel):
     card_number: Optional[str] = None
     initial_balance: Optional[float] = None
     available_limit: Optional[float] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     active: bool

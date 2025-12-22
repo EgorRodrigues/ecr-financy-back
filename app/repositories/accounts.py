@@ -18,6 +18,8 @@ def create_account(session, data: AccountCreate) -> AccountOut:
             card_number=data.card_number,
             initial_balance=data.initial_balance,
             available_limit=data.available_limit,
+            closing_day=data.closing_day,
+            due_day=data.due_day,
             created_at=now,
             updated_at=now,
             active=data.active,
@@ -33,6 +35,8 @@ def create_account(session, data: AccountCreate) -> AccountOut:
         card_number=data.card_number,
         initial_balance=data.initial_balance,
         available_limit=data.available_limit,
+        closing_day=data.closing_day,
+        due_day=data.due_day,
         created_at=now,
         updated_at=now,
         active=data.active,
@@ -49,6 +53,8 @@ def list_accounts(session, limit: int = 50, account: str | None = None, account_
         accounts.c.card_number,
         accounts.c.initial_balance,
         accounts.c.available_limit,
+        accounts.c.closing_day,
+        accounts.c.due_day,
         accounts.c.created_at,
         accounts.c.updated_at,
         accounts.c.active,
@@ -70,6 +76,8 @@ def list_accounts(session, limit: int = 50, account: str | None = None, account_
             card_number=row.card_number,
             initial_balance=row.initial_balance,
             available_limit=row.available_limit,
+            closing_day=row.closing_day,
+            due_day=row.due_day,
             created_at=row.created_at,
             updated_at=row.updated_at,
             active=row.active,
@@ -89,6 +97,8 @@ def get_account(session, aid: UUID) -> AccountOut | None:
             accounts.c.card_number,
             accounts.c.initial_balance,
             accounts.c.available_limit,
+            accounts.c.closing_day,
+            accounts.c.due_day,
             accounts.c.created_at,
             accounts.c.updated_at,
             accounts.c.active,
@@ -105,6 +115,8 @@ def get_account(session, aid: UUID) -> AccountOut | None:
         card_number=row.card_number,
         initial_balance=row.initial_balance,
         available_limit=row.available_limit,
+        closing_day=row.closing_day,
+        due_day=row.due_day,
         created_at=row.created_at,
         updated_at=row.updated_at,
         active=row.active,
@@ -122,6 +134,8 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
     new_card = data.card_number if data.card_number is not None else current.card_number
     new_initial = data.initial_balance if data.initial_balance is not None else current.initial_balance
     new_limit = data.available_limit if data.available_limit is not None else current.available_limit
+    new_closing_day = data.closing_day if data.closing_day is not None else current.closing_day
+    new_due_day = data.due_day if data.due_day is not None else current.due_day
     new_active = data.active if data.active is not None else current.active
     now = datetime.now(timezone.utc)
     session.execute(
@@ -135,6 +149,8 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
             card_number=new_card,
             initial_balance=new_initial,
             available_limit=new_limit,
+            closing_day=new_closing_day,
+            due_day=new_due_day,
             active=new_active,
             updated_at=now,
         )
@@ -149,6 +165,8 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
         card_number=new_card,
         initial_balance=new_initial,
         available_limit=new_limit,
+        closing_day=new_closing_day,
+        due_day=new_due_day,
         created_at=current.created_at,
         updated_at=now,
         active=new_active,

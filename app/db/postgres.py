@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, func, text
+from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, Integer, func, text
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import sessionmaker, Session
 from uuid import uuid4
@@ -71,6 +71,8 @@ accounts = Table(
     Column("card_number", Text, nullable=True),
     Column("initial_balance", Numeric(18, 2), nullable=True),
     Column("available_limit", Numeric(18, 2), nullable=True),
+    Column("closing_day", Integer, nullable=True),
+    Column("due_day", Integer, nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("active", Boolean, nullable=False, server_default="true"),
