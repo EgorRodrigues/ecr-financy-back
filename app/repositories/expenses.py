@@ -1,9 +1,9 @@
 from uuid import UUID, uuid4
 from decimal import Decimal
 from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, func, Text
 from app.models.expenses import ExpenseCreate, ExpenseUpdate, ExpenseOut
-from app.db.postgres import expenses
+from app.db.postgres import expenses, accounts
 
 
 def _to_date(value):
@@ -76,38 +76,45 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
     )
 
 
-def list_expenses(session, limit: int = 50) -> list[ExpenseOut]:
-    rows = session.execute(
-        select(
-            expenses.c.id,
-            expenses.c.amount,
-            expenses.c.status,
-            expenses.c.issue_date,
-            expenses.c.due_date,
-            expenses.c.payment_date,
-            expenses.c.original_amount,
-            expenses.c.interest,
-            expenses.c.fine,
-            expenses.c.discount,
-            expenses.c.total_paid,
-            expenses.c.category_id,
-            expenses.c.subcategory_id,
-            expenses.c.cost_center_id,
-            expenses.c.contact_id,
-            expenses.c.description,
-            expenses.c.document,
-            expenses.c.payment_method,
-            expenses.c.account,
-            expenses.c.recurrence,
-            expenses.c.competence,
-            expenses.c.project,
-            expenses.c.tags,
-            expenses.c.notes,
-            expenses.c.active,
-            expenses.c.created_at,
-            expenses.c.updated_at,
-        ).limit(limit)
-    ).all()
+def list_expenses(session, limit: int = 50, account: str | None = None, account_type: str | None = None) -> list[ExpenseOut]:
+    query = select(
+        expenses.c.id,
+        expenses.c.amount,
+        expenses.c.status,
+        expenses.c.issue_date,
+        expenses.c.due_date,
+        expenses.c.payment_date,
+        expenses.c.original_amount,
+        expenses.c.interest,
+        expenses.c.fine,
+        expenses.c.discount,
+        expenses.c.total_paid,
+        expenses.c.category_id,
+        expenses.c.subcategory_id,
+        expenses.c.cost_center_id,
+        expenses.c.contact_id,
+        expenses.c.description,
+        expenses.c.document,
+        expenses.c.payment_method,
+        expenses.c.account,
+        expenses.c.recurrence,
+        expenses.c.competence,
+        expenses.c.project,
+        expenses.c.tags,
+        expenses.c.notes,
+        expenses.c.active,
+        expenses.c.created_at,
+        expenses.c.updated_at,
+    )
+
+    if account:
+        query = query.where(expenses.c.account == account)
+
+    if account_type:
+        query = query.join(accounts, expenses.c.account == func.cast(accounts.c.id, Text))
+        query = query.where(accounts.c.type == account_type)
+
+    rows = session.execute(query.limit(limit)).all()
     return [
         ExpenseOut(
             id=row.id,

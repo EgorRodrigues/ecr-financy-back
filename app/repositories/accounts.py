@@ -39,22 +39,27 @@ def create_account(session, data: AccountCreate) -> AccountOut:
     )
 
 
-def list_accounts(session, limit: int = 50) -> list[AccountOut]:
-    rows = session.execute(
-        select(
-            accounts.c.id,
-            accounts.c.name,
-            accounts.c.type,
-            accounts.c.agency,
-            accounts.c.account,
-            accounts.c.card_number,
-            accounts.c.initial_balance,
-            accounts.c.available_limit,
-            accounts.c.created_at,
-            accounts.c.updated_at,
-            accounts.c.active,
-        ).limit(limit)
-    ).all()
+def list_accounts(session, limit: int = 50, account: str | None = None, account_type: str | None = None) -> list[AccountOut]:
+    query = select(
+        accounts.c.id,
+        accounts.c.name,
+        accounts.c.type,
+        accounts.c.agency,
+        accounts.c.account,
+        accounts.c.card_number,
+        accounts.c.initial_balance,
+        accounts.c.available_limit,
+        accounts.c.created_at,
+        accounts.c.updated_at,
+        accounts.c.active,
+    )
+    if account:
+        query = query.where(accounts.c.account == account)
+    
+    if account_type:
+        query = query.where(accounts.c.type == account_type)
+    
+    rows = session.execute(query.limit(limit)).all()
     return [
         AccountOut(
             id=row.id,

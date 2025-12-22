@@ -1,9 +1,9 @@
 from uuid import UUID, uuid4
 from decimal import Decimal
 from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import select, insert, update, delete, func, Text
 from app.models.incomes import IncomeCreate, IncomeUpdate, IncomeOut
-from app.db.postgres import incomes
+from app.db.postgres import incomes, accounts
 
 
 def _to_date(value):
@@ -76,38 +76,45 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
     )
 
 
-def list_incomes(session, limit: int = 50) -> list[IncomeOut]:
-    rows = session.execute(
-        select(
-            incomes.c.id,
-            incomes.c.amount,
-            incomes.c.status,
-            incomes.c.issue_date,
-            incomes.c.due_date,
-            incomes.c.receipt_date,
-            incomes.c.original_amount,
-            incomes.c.interest,
-            incomes.c.fine,
-            incomes.c.discount,
-            incomes.c.total_received,
-            incomes.c.category_id,
-            incomes.c.subcategory_id,
-            incomes.c.cost_center_id,
-            incomes.c.contact_id,
-            incomes.c.description,
-            incomes.c.document,
-            incomes.c.receiving_method,
-            incomes.c.account,
-            incomes.c.recurrence,
-            incomes.c.competence,
-            incomes.c.project,
-            incomes.c.tags,
-            incomes.c.notes,
-            incomes.c.active,
-            incomes.c.created_at,
-            incomes.c.updated_at,
-        ).limit(limit)
-    ).all()
+def list_incomes(session, limit: int = 50, account: str | None = None, account_type: str | None = None) -> list[IncomeOut]:
+    query = select(
+        incomes.c.id,
+        incomes.c.amount,
+        incomes.c.status,
+        incomes.c.issue_date,
+        incomes.c.due_date,
+        incomes.c.receipt_date,
+        incomes.c.original_amount,
+        incomes.c.interest,
+        incomes.c.fine,
+        incomes.c.discount,
+        incomes.c.total_received,
+        incomes.c.category_id,
+        incomes.c.subcategory_id,
+        incomes.c.cost_center_id,
+        incomes.c.contact_id,
+        incomes.c.description,
+        incomes.c.document,
+        incomes.c.receiving_method,
+        incomes.c.account,
+        incomes.c.recurrence,
+        incomes.c.competence,
+        incomes.c.project,
+        incomes.c.tags,
+        incomes.c.notes,
+        incomes.c.active,
+        incomes.c.created_at,
+        incomes.c.updated_at,
+    )
+
+    if account:
+        query = query.where(incomes.c.account == account)
+
+    if account_type:
+        query = query.join(accounts, incomes.c.account == func.cast(accounts.c.id, Text))
+        query = query.where(accounts.c.type == account_type)
+
+    rows = session.execute(query.limit(limit)).all()
     return [
         IncomeOut(
             id=row.id,

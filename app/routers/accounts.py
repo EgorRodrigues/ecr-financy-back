@@ -22,10 +22,10 @@ def create(request: Request, payload: AccountCreate):
 
 
 @router.get("/", response_model=list[AccountOut])
-def list_(request: Request, limit: int = 50):
+def list_(request: Request, limit: int = 50, account: str | None = None, account_type: str | None = None):
     SessionLocal = request.app.state.cassandra_session
     with SessionLocal() as session:
-        return list_accounts(session, limit)
+        return list_accounts(session, limit, account, account_type)
 
 
 @router.get("/{account_id}", response_model=AccountOut)
