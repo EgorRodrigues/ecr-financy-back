@@ -97,10 +97,14 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
     total_spent = sum(t.amount for t in transactions_out)
     available_limit = total_limit - total_spent
 
+    current_invoice, next_invoices = get_account_invoices_summary(session, account_id)
+
     return CreditCardSummary(
         total_limit=total_limit,
         available_limit=available_limit,
-        transactions=transactions_out
+        transactions=transactions_out,
+        current_invoice=current_invoice,
+        next_invoices=next_invoices
     )
 
 
