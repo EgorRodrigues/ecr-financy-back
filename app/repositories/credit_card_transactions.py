@@ -117,7 +117,7 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
             invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date, data.amount)
             invoice_id = invoice.id
             
-            if data.status == 'pago':
+            if data.status != 'cancelado':
                 update_invoice_amount(session, invoice.id, data.amount)
         except Exception:
             # Fallback if account not found or other issue?
@@ -344,18 +344,18 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
     if current.invoice_id:
         delta = Decimal('0')
         
-        # Scenario 1: Status Changed to 'pago'
-        if current.status != 'pago' and new_status == 'pago':
+        # Scenario 1: Status Changed to 'cancelado' (Remove amount)
+        if current.status != 'cancelado' and new_status == 'cancelado':
+            delta -= current.amount
+        
+        # Scenario 2: Status Changed from 'cancelado' to active (Add amount)
+        elif current.status == 'cancelado' and new_status != 'cancelado':
             delta += new_amount
-            
-        # Scenario 2: Status Changed from 'pago' to something else
-        elif current.status == 'pago' and new_status != 'pago':
-            delta -= current.amount # Use current amount (which was added previously)
-            
-        # Scenario 3: Amount changed, and stays 'pago'
-        elif current.status == 'pago' and new_status == 'pago':
+        
+        # Scenario 3: Amount changed, and neither is 'cancelado'
+        elif current.status != 'cancelado' and new_status != 'cancelado':
             delta += (new_amount - current.amount)
-            
+        
         if delta != Decimal('0'):
             update_invoice_amount(session, current.invoice_id, delta)
 
@@ -449,9 +449,9 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
 
 def delete_credit_card_transaction(session, eid: UUID) -> bool:
     # Handle Invoice Amount?
-    # If deleting a 'pago' transaction, we should decrease invoice amount.
+    # If deleting a non-cancelled transaction, we should decrease invoice amount.
     current = get_credit_card_transaction(session, eid)
-    if current and current.invoice_id and current.status == 'pago':
+    if current and current.invoice_id and current.status != 'cancelado':
          update_invoice_amount(session, current.invoice_id, -current.amount)
          
     session.execute(delete(credit_card_transactions).where(credit_card_transactions.c.id == eid))
