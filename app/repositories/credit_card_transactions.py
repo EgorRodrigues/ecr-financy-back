@@ -114,7 +114,7 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
         # Assuming account is UUID string
         try:
             account_uuid = UUID(str(data.account))
-            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date, data.amount)
+            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date, data.amount, data.due_date)
             invoice_id = invoice.id
             
             if data.status != 'cancelado':
@@ -339,28 +339,58 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
         
     new_amount = data.amount if data.amount is not None else current.amount
     new_status = data.status if data.status is not None else current.status
-    
-    # Handle Invoice Amount Update
-    if current.invoice_id:
-        delta = Decimal('0')
-        
-        # Scenario 1: Status Changed to 'cancelado' (Remove amount)
-        if current.status != 'cancelado' and new_status == 'cancelado':
-            delta -= current.amount
-        
-        # Scenario 2: Status Changed from 'cancelado' to active (Add amount)
-        elif current.status == 'cancelado' and new_status != 'cancelado':
-            delta += new_amount
-        
-        # Scenario 3: Amount changed, and neither is 'cancelado'
-        elif current.status != 'cancelado' and new_status != 'cancelado':
-            delta += (new_amount - current.amount)
-        
-        if delta != Decimal('0'):
-            update_invoice_amount(session, current.invoice_id, delta)
-
     new_issue_date = data.issue_date if data.issue_date is not None else current.issue_date
     new_due_date = data.due_date if data.due_date is not None else current.due_date
+    new_account = data.account if data.account is not None else current.account
+    
+    # Determine new invoice
+    new_invoice_id = current.invoice_id
+    recalc_invoice = False
+    
+    # Check triggers for invoice recalculation
+    # If due_date changed, OR issue_date changed (and no due_date), OR account changed
+    if (data.due_date is not None and data.due_date != current.due_date) or \
+       (data.issue_date is not None and data.issue_date != current.issue_date and new_due_date is None) or \
+       (data.account is not None and str(data.account) != str(current.account)):
+        recalc_invoice = True
+        
+    if recalc_invoice and new_account:
+        try:
+             account_uuid = UUID(str(new_account))
+             new_invoice = ensure_invoice_for_transaction(session, account_uuid, new_issue_date, new_amount, new_due_date)
+             new_invoice_id = new_invoice.id
+        except Exception:
+             pass
+
+    # Handle Invoice Amount Update
+    if new_invoice_id == current.invoice_id:
+        if current.invoice_id:
+            delta = Decimal('0')
+            
+            # Scenario 1: Status Changed to 'cancelado' (Remove amount)
+            if current.status != 'cancelado' and new_status == 'cancelado':
+                delta -= current.amount
+            
+            # Scenario 2: Status Changed from 'cancelado' to active (Add amount)
+            elif current.status == 'cancelado' and new_status != 'cancelado':
+                delta += new_amount
+            
+            # Scenario 3: Amount changed, and neither is 'cancelado'
+            elif current.status != 'cancelado' and new_status != 'cancelado':
+                delta += (new_amount - current.amount)
+            
+            if delta != Decimal('0'):
+                update_invoice_amount(session, current.invoice_id, delta)
+    else:
+        # Invoice Changed
+        # Remove from old
+        if current.invoice_id and current.status != 'cancelado':
+            update_invoice_amount(session, current.invoice_id, -current.amount)
+            
+        # Add to new
+        if new_invoice_id and new_status != 'cancelado':
+            update_invoice_amount(session, new_invoice_id, new_amount)
+
     new_payment_date = data.payment_date if data.payment_date is not None else current.payment_date
     new_category_id = data.category_id if data.category_id is not None else current.category_id
     new_subcategory_id = data.subcategory_id if data.subcategory_id is not None else current.subcategory_id
@@ -369,7 +399,6 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
     new_description = data.description if data.description is not None else current.description
     new_document = data.document if data.document is not None else current.document
     new_payment_method = data.payment_method if data.payment_method is not None else current.payment_method
-    new_account = data.account if data.account is not None else current.account
     new_recurrence = data.recurrence if data.recurrence is not None else current.recurrence
     new_competence = data.competence if data.competence is not None else current.competence
     new_project = data.project if data.project is not None else current.project
@@ -411,6 +440,7 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
             tags=new_tags,
             notes=new_notes,
             active=new_active,
+            invoice_id=new_invoice_id,
             updated_at=now,
         )
     )
@@ -441,7 +471,7 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
         tags=new_tags,
         notes=new_notes,
         active=new_active,
-        invoice_id=current.invoice_id,
+        invoice_id=new_invoice_id,
         created_at=current.created_at,
         updated_at=now,
     )

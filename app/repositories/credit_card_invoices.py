@@ -62,6 +62,46 @@ def calculate_invoice_period(transaction_date: date, closing_day: int, due_day: 
     
     return period_start, period_end, due_date
 
+def calculate_period_from_due_date(target_due_date: date, closing_day: int, due_day: int):
+    # Determine the "official" invoice due date for the month/year of the target_due_date
+    last_day_target_month = calendar.monthrange(target_due_date.year, target_due_date.month)[1]
+    effective_due_day = min(due_day, last_day_target_month)
+    invoice_due_date = date(target_due_date.year, target_due_date.month, effective_due_day)
+    
+    # Backtrack to find Period End (Closing Date)
+    if due_day >= closing_day:
+        # Closing was in the SAME month/year
+        closing_year = invoice_due_date.year
+        closing_month = invoice_due_date.month
+    else:
+        # Closing was in the PREVIOUS month/year
+        if invoice_due_date.month == 1:
+            closing_year = invoice_due_date.year - 1
+            closing_month = 12
+        else:
+            closing_year = invoice_due_date.year
+            closing_month = invoice_due_date.month - 1
+            
+    last_day_closing = calendar.monthrange(closing_year, closing_month)[1]
+    effective_closing_day = min(closing_day, last_day_closing)
+    period_end = date(closing_year, closing_month, effective_closing_day)
+    
+    # Backtrack to find Period Start (Day after Previous Closing)
+    if period_end.month == 1:
+        prev_year = period_end.year - 1
+        prev_month = 12
+    else:
+        prev_year = period_end.year
+        prev_month = period_end.month - 1
+        
+    last_day_prev = calendar.monthrange(prev_year, prev_month)[1]
+    effective_prev_closing = min(closing_day, last_day_prev)
+    prev_closing_date = date(prev_year, prev_month, effective_prev_closing)
+    
+    period_start = prev_closing_date + timedelta(days=1)
+    
+    return period_start, period_end, invoice_due_date
+
 def get_invoice_by_period(session: Session, account_id: UUID, period_start: date, period_end: date):
     query = select(credit_card_invoices).where(
         credit_card_invoices.c.account_id == account_id,
@@ -178,7 +218,7 @@ def get_account_details(session: Session, account_id: UUID):
     query = select(accounts).where(accounts.c.id == account_id)
     return session.execute(query).one_or_none()
 
-def ensure_invoice_for_transaction(session: Session, account_id: UUID, transaction_date: date, transaction_amount: Decimal):
+def ensure_invoice_for_transaction(session: Session, account_id: UUID, transaction_date: date, transaction_amount: Decimal, transaction_due_date: date | None = None):
     # 1. Get Account Settings
     account = get_account_details(session, account_id)
     if not account:
@@ -188,46 +228,28 @@ def ensure_invoice_for_transaction(session: Session, account_id: UUID, transacti
     due_day = account.due_day
     
     if not closing_day or not due_day:
-        # Fallback or error?
-        # If no closing day, maybe it's not a credit card or configured differently.
-        # User implies credit card.
         raise ValueError("Account missing closing_day or due_day configuration")
 
     # 2. Calculate Period
-    period_start, period_end, due_date = calculate_invoice_period(transaction_date, closing_day, due_day)
+    if transaction_due_date:
+        period_start, period_end, due_date = calculate_period_from_due_date(transaction_due_date, closing_day, due_day)
+    else:
+        period_start, period_end, due_date = calculate_invoice_period(transaction_date, closing_day, due_day)
     
     # 3. Check if invoice exists
     invoice = get_invoice_by_period(session, account_id, period_start, period_end)
     
     if not invoice:
         # Create new invoice
-        # Only if we are adding a paid transaction? 
-        # User: "iremos criar uma fatura somente se tivermos alguma conta paga"
-        # If this function is called, it means we have a transaction.
-        # Assuming we only call this for "paid" transactions or we create it anyway and amount is 0 until paid?
-        # User said: "fatura acumulará todas as transações pagas"
-        # And "total da fatura é a soma das transações realizadas no periodo".
-        # If I create a pending transaction, does it go to invoice?
-        # Usually yes, but it might not affect the "to pay" amount until it's processed.
-        # However, the user said "fatura acumulará todas as transações PAGAS".
-        # So maybe pending transactions don't update the invoice amount?
-        # But they should probably be linked to the invoice so when they become paid, the invoice updates.
-        
         invoice_create = CreditCardInvoiceCreate(
             account_id=account_id,
             period_start=period_start,
             period_end=period_end,
             due_date=due_date,
-            amount=Decimal('0'), # Start with 0, add transaction amount next
+            amount=Decimal('0'), 
             status="open"
         )
         invoice = create_invoice(session, invoice_create)
         
-    # 4. Update Invoice Amount
-    # We should update the amount.
-    # update_invoice_amount(session, invoice.id, transaction_amount)
-    # Wait, the calling function should handle the amount update if it's adding the transaction.
-    # This function just ensures existence and returns the ID.
-    
     return invoice
 
