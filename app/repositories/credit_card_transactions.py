@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, insert, update, delete, func, Text
 from app.models.credit_card_transactions import CreditCardTransactionCreate, CreditCardTransactionUpdate, CreditCardTransactionOut, CreditCardSummary
 from app.db.postgres import credit_card_transactions, accounts
-from app.repositories.credit_card_invoices import ensure_invoice_for_transaction, update_invoice_amount
+from app.repositories.credit_card_invoices import ensure_invoice_for_transaction, update_invoice_amount, get_account_invoices_summary
 
 
 def _to_date(value):

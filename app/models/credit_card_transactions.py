@@ -95,10 +95,14 @@ class CreditCardTransactionOut(BaseModel):
         return float(v if v is not None else _D('0'))
 
 
+from app.models.credit_card_invoices import CreditCardInvoiceOut
+
 class CreditCardSummary(BaseModel):
     total_limit: Decimal
     available_limit: Decimal
     transactions: List[CreditCardTransactionOut]
+    current_invoice: Optional[CreditCardInvoiceOut] = None
+    next_invoices: List[CreditCardInvoiceOut] = []
 
     @field_serializer('total_limit', 'available_limit')
     def _ser_limits(self, v: Decimal):
