@@ -11,6 +11,7 @@ from app.routers.cost_centers import router as cost_centers_router
 from app.routers.contacts import router as contacts_router
 from app.routers.expenses import router as expenses_router
 from app.routers.credit_card_transactions import router as credit_card_transactions_router
+from app.routers.credit_card_invoices import router as credit_card_invoices_router
 from app.routers.incomes import router as incomes_router
 from app.routers.accounts import router as accounts_router
 from app.routers.dashboard import router as dashboard_router

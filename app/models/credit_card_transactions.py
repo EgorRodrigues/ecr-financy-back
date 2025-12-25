@@ -85,6 +85,7 @@ class CreditCardTransactionOut(BaseModel):
     tags: Optional[List[str]] = None
     notes: Optional[str] = None
     active: bool
+    invoice_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

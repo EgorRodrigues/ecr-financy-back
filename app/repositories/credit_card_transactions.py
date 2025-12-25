@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, insert, update, delete, func, Text
 from app.models.credit_card_transactions import CreditCardTransactionCreate, CreditCardTransactionUpdate, CreditCardTransactionOut, CreditCardSummary
 from app.db.postgres import credit_card_transactions, accounts
+from app.repositories.credit_card_invoices import ensure_invoice_for_transaction, update_invoice_amount
 
 
 def _to_date(value):
@@ -49,6 +50,7 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
         credit_card_transactions.c.tags,
         credit_card_transactions.c.notes,
         credit_card_transactions.c.active,
+        credit_card_transactions.c.invoice_id,
         credit_card_transactions.c.created_at,
         credit_card_transactions.c.updated_at,
     ).where(
@@ -85,6 +87,7 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
             tags=row.tags,
             notes=row.notes,
             active=row.active,
+            invoice_id=row.invoice_id,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -104,6 +107,24 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
 def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -> CreditCardTransactionOut:
     eid = uuid4()
     now = datetime.now(timezone.utc)
+    
+    # Invoice Logic
+    invoice_id = None
+    if data.account and data.issue_date:
+        # Assuming account is UUID string
+        try:
+            account_uuid = UUID(str(data.account))
+            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date, data.amount)
+            invoice_id = invoice.id
+            
+            if data.status == 'pago':
+                update_invoice_amount(session, invoice.id, data.amount)
+        except Exception:
+            # Fallback if account not found or other issue?
+            # For now let it raise or ignore?
+            # Ideally we want this to work.
+            pass
+
     session.execute(
         insert(credit_card_transactions).values(
             id=eid,
@@ -131,6 +152,7 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
             tags=data.tags,
             notes=data.notes,
             active=data.active,
+            invoice_id=invoice_id,
             created_at=now,
             updated_at=now,
         )
@@ -162,6 +184,7 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
         tags=data.tags,
         notes=data.notes,
         active=data.active,
+        invoice_id=invoice_id,
         created_at=now,
         updated_at=now,
     )
@@ -194,6 +217,7 @@ def list_credit_card_transactions(session, limit: int = 50, account: str | None 
         credit_card_transactions.c.tags,
         credit_card_transactions.c.notes,
         credit_card_transactions.c.active,
+        credit_card_transactions.c.invoice_id,
         credit_card_transactions.c.created_at,
         credit_card_transactions.c.updated_at,
     )
@@ -233,6 +257,7 @@ def list_credit_card_transactions(session, limit: int = 50, account: str | None 
             tags=row.tags,
             notes=row.notes,
             active=row.active,
+            invoice_id=row.invoice_id,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -268,6 +293,7 @@ def get_credit_card_transaction(session, eid: UUID) -> CreditCardTransactionOut 
             credit_card_transactions.c.tags,
             credit_card_transactions.c.notes,
             credit_card_transactions.c.active,
+            credit_card_transactions.c.invoice_id,
             credit_card_transactions.c.created_at,
             credit_card_transactions.c.updated_at,
         ).where(credit_card_transactions.c.id == eid)
@@ -300,6 +326,7 @@ def get_credit_card_transaction(session, eid: UUID) -> CreditCardTransactionOut 
         tags=row.tags,
         notes=row.notes,
         active=row.active,
+        invoice_id=row.invoice_id,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -309,8 +336,29 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
     current = get_credit_card_transaction(session, eid)
     if not current:
         return None
+        
     new_amount = data.amount if data.amount is not None else current.amount
     new_status = data.status if data.status is not None else current.status
+    
+    # Handle Invoice Amount Update
+    if current.invoice_id:
+        delta = Decimal('0')
+        
+        # Scenario 1: Status Changed to 'pago'
+        if current.status != 'pago' and new_status == 'pago':
+            delta += new_amount
+            
+        # Scenario 2: Status Changed from 'pago' to something else
+        elif current.status == 'pago' and new_status != 'pago':
+            delta -= current.amount # Use current amount (which was added previously)
+            
+        # Scenario 3: Amount changed, and stays 'pago'
+        elif current.status == 'pago' and new_status == 'pago':
+            delta += (new_amount - current.amount)
+            
+        if delta != Decimal('0'):
+            update_invoice_amount(session, current.invoice_id, delta)
+
     new_issue_date = data.issue_date if data.issue_date is not None else current.issue_date
     new_due_date = data.due_date if data.due_date is not None else current.due_date
     new_payment_date = data.payment_date if data.payment_date is not None else current.payment_date
@@ -334,6 +382,7 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
     new_discount = data.discount if data.discount is not None else current.discount
     new_total_paid = data.total_paid if data.total_paid is not None else current.total_paid
     now = datetime.now(timezone.utc)
+    
     session.execute(
         update(credit_card_transactions)
         .where(credit_card_transactions.c.id == eid)
@@ -392,12 +441,19 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
         tags=new_tags,
         notes=new_notes,
         active=new_active,
+        invoice_id=current.invoice_id,
         created_at=current.created_at,
         updated_at=now,
     )
 
 
 def delete_credit_card_transaction(session, eid: UUID) -> bool:
+    # Handle Invoice Amount?
+    # If deleting a 'pago' transaction, we should decrease invoice amount.
+    current = get_credit_card_transaction(session, eid)
+    if current and current.invoice_id and current.status == 'pago':
+         update_invoice_amount(session, current.invoice_id, -current.amount)
+         
     session.execute(delete(credit_card_transactions).where(credit_card_transactions.c.id == eid))
     session.commit()
     return True

@@ -153,10 +153,26 @@ transactions = Table(
 )
 
 
+credit_card_invoices = Table(
+    "credit_card_invoices",
+    metadata,
+    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    Column("account_id", UUID(as_uuid=True), nullable=False),
+    Column("period_start", Date, nullable=False),
+    Column("period_end", Date, nullable=False),
+    Column("due_date", Date, nullable=False),
+    Column("amount", Numeric(18, 2), nullable=False, default=0),
+    Column("status", Text, nullable=False, default="open"),  # open, closed, paid
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+
 credit_card_transactions = Table(
     "credit_card_transactions",
     metadata,
     Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
+    Column("invoice_id", UUID(as_uuid=True), nullable=True),
     Column("amount", Numeric(18, 2), nullable=False),
     Column("status", Text, nullable=False),
     Column("issue_date", Date, nullable=True),
