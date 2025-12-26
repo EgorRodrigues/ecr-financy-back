@@ -2,7 +2,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+from fastapi.testclient import TestClient
 from app.db.postgres import metadata
+from app.main import app
 
 @pytest.fixture(scope="session")
 def db_engine():
@@ -35,3 +37,21 @@ def session(db_engine):
     session.close()
     transaction.rollback()
     connection.close()
+
+@pytest.fixture(scope="function")
+def client(session):
+    """
+    Fixture for FastAPI TestClient with overridden database session.
+    """
+    class MockSessionLocal:
+        def __call__(self):
+            return self
+        def __enter__(self):
+            return session
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass 
+            
+    app.state.cassandra_session = MockSessionLocal()
+    
+    with TestClient(app) as c:
+        yield c
