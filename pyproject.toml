@@ -21,6 +21,7 @@ alembic = "^1.13.2"
 pytest = "^9.0.1"
 ruff = "^0.14.7"
 mypy = "^1.19.0"
+taskipy = "^1.14.1"
 
 [tool.ruff]
 line-length = 100
@@ -40,3 +41,17 @@ ignore_missing_imports = true
 [tool.poetry.scripts]
 serve = "uvicorn:main"
 seed-basics = "app.scripts.seed_basics:main"
+
+[tool.taskipy.tasks]
+lint = 'ruff check .'
+lint-fix = 'ruff check . --fix'
+format = 'ruff format .'
+post_format = 'task lint-fix'
+run = 'uvicorn app.main:app --reload --host 0.0.0.0 --port 8000'
+runserver = 'fastapi dev app/main.py'
+test = 'pytest -q'
+test-all = 'pytest -s -x --cov=app -vv'
+post_test = 'coverage html'
+clean = 'rm -rf htmlcov .coverage database.db .*_cache && find . -type d -name "__pycache__" -exec rm -rf {} +; true'
+makemigrations = 'alembic revision --autogenerate -m'
+migrate = 'alembic upgrade head'
