@@ -114,11 +114,11 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
     
     # Invoice Logic
     invoice_id = None
-    if data.account and data.issue_date:
+    if data.account and data.due_date:
         # Assuming account is UUID string
         try:
             account_uuid = UUID(str(data.account))
-            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date)
+            invoice = ensure_invoice_for_transaction(session, account_uuid, data.due_date)
             invoice_id = invoice.id
             
             if data.status != 'cancelado':
