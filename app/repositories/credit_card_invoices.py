@@ -10,10 +10,6 @@ import calendar
 def calculate_invoice_period(transaction_date: date, closing_day: int, due_day: int):
     # Determine the closing date for the transaction
     if transaction_date.day <= closing_day:
-        # Closes this month
-        # Handle Feb 30 etc via clamping? 
-        # Assuming closing_day is valid for most months, but need care.
-        # Let's verify valid date for period_end
         last_day_current = calendar.monthrange(transaction_date.year, transaction_date.month)[1]
         effective_closing = min(closing_day, last_day_current)
         period_end = date(transaction_date.year, transaction_date.month, effective_closing)
@@ -218,7 +214,7 @@ def get_account_details(session: Session, account_id: UUID):
     query = select(accounts).where(accounts.c.id == account_id)
     return session.execute(query).one_or_none()
 
-def ensure_invoice_for_transaction(session: Session, account_id: UUID, transaction_date: date, transaction_amount: Decimal, transaction_due_date: date | None = None):
+def ensure_invoice_for_transaction(session: Session, account_id: UUID, transaction_date: date):
     # 1. Get Account Settings
     account = get_account_details(session, account_id)
     if not account:
@@ -231,11 +227,8 @@ def ensure_invoice_for_transaction(session: Session, account_id: UUID, transacti
         raise ValueError("Account missing closing_day or due_day configuration")
 
     # 2. Calculate Period
-    if transaction_due_date:
-        period_start, period_end, due_date = calculate_period_from_due_date(transaction_due_date, closing_day, due_day)
-    else:
-        period_start, period_end, due_date = calculate_invoice_period(transaction_date, closing_day, due_day)
-    
+    period_start, period_end, due_date = calculate_invoice_period(transaction_date, closing_day, due_day)
+       
     # 3. Check if invoice exists
     invoice = get_invoice_by_period(session, account_id, period_start, period_end)
     
@@ -285,4 +278,3 @@ def get_account_invoices_summary(session: Session, account_id: UUID):
     next_invoices = invoices[1:]
     
     return current_invoice, next_invoices
-

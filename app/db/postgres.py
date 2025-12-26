@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, Integer, func, text
+from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, Integer, func, text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import sessionmaker, Session
 from uuid import uuid4
@@ -165,6 +165,7 @@ credit_card_invoices = Table(
     Column("status", Text, nullable=False, default="open"),  # open, closed, paid
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    UniqueConstraint("account_id", "period_start", "period_end", name="uq_credit_card_invoices_period"),
 )
 
 

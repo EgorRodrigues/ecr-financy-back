@@ -118,7 +118,7 @@ def create_credit_card_transaction(session, data: CreditCardTransactionCreate) -
         # Assuming account is UUID string
         try:
             account_uuid = UUID(str(data.account))
-            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date, data.amount, data.due_date)
+            invoice = ensure_invoice_for_transaction(session, account_uuid, data.issue_date)
             invoice_id = invoice.id
             
             if data.status != 'cancelado':
@@ -361,7 +361,7 @@ def update_credit_card_transaction(session, eid: UUID, data: CreditCardTransacti
     if recalc_invoice and new_account:
         try:
              account_uuid = UUID(str(new_account))
-             new_invoice = ensure_invoice_for_transaction(session, account_uuid, new_issue_date, new_amount, new_due_date)
+             new_invoice = ensure_invoice_for_transaction(session, account_uuid, new_issue_date)
              new_invoice_id = new_invoice.id
         except Exception:
              pass
