@@ -1,8 +1,28 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, Integer, func, text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import create_engine, MetaData, Table, Column, Text, Boolean, Date, DateTime, Numeric, BigInteger, Integer, func, text, UniqueConstraint, Uuid
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
+from sqlalchemy.types import TypeDecorator, JSON
 from sqlalchemy.orm import sessionmaker, Session
 from uuid import uuid4
 from app.core.config import settings
+
+class CustomArray(TypeDecorator):
+    impl = JSON
+    cache_ok = True
+
+    def __init__(self, item_type, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.item_type = item_type
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(PG_ARRAY(self.item_type))
+        return dialect.type_descriptor(JSON())
+
+def UUID(as_uuid=True):
+    return Uuid(as_uuid=as_uuid)
+
+def ARRAY(item_type):
+    return CustomArray(item_type)
 
 _engine = None
 _SessionLocal = None

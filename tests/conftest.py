@@ -1,16 +1,24 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from app.db.postgres import connect_postgres, _engine
-from app.core.config import settings
+from sqlalchemy.pool import StaticPool
+from app.db.postgres import metadata
 
 @pytest.fixture(scope="session")
 def db_engine():
-    # Initialize the global engine
-    connect_postgres(settings)
-    # Import the initialized engine
-    from app.db.postgres import _engine
-    yield _engine
+    # Use SQLite in-memory database
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    
+    # Create tables
+    metadata.create_all(bind=engine)
+    
+    yield engine
+    
+    metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="function")
 def session(db_engine):
