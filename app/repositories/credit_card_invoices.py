@@ -1,7 +1,7 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import select, insert, update, delete, func
-from app.db.postgres import credit_card_invoices, accounts
+from app.db.postgres import credit_card_invoices, accounts, expenses
 from app.models.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate, CreditCardInvoiceOut
 from datetime import date, timedelta
 from decimal import Decimal
@@ -177,6 +177,82 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
     ).returning(credit_card_invoices)
     
     result = session.execute(stmt).one()
+
+    # Sync with Expenses
+    account_name_query = select(accounts.c.name).where(accounts.c.id == payload.account_id)
+    account_name = session.execute(account_name_query).scalar_one_or_none() or "Unknown Account"
+
+    expense_status = "pago" if result.status == "paid" else "pendente"
+    description = f"Fatura Cartão - {account_name} - {result.due_date.strftime('%m/%Y')}"
+
+    session.execute(
+        insert(expenses).values(
+            id=uuid4(),
+            invoice_id=result.id,
+            amount=result.amount,
+            status=expense_status,
+            due_date=result.due_date,
+            description=description,
+            account=account_name,
+            active=True,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+    )
+
+    return CreditCardInvoiceOut(
+        id=result.id,
+        account_id=result.account_id,
+        period_start=result.period_start,
+        period_end=result.period_end,
+        due_date=result.due_date,
+        amount=result.amount,
+        status=result.status,
+        created_at=result.created_at,
+        updated_at=result.updated_at
+    )
+
+def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoiceUpdate):
+    current = get_invoice(session, invoice_id)
+    if not current:
+        return None
+
+    values = {}
+    if payload.amount is not None:
+        values['amount'] = payload.amount
+    if payload.status is not None:
+        values['status'] = payload.status
+    if payload.due_date is not None:
+        values['due_date'] = payload.due_date
+    
+    if not values:
+        return current
+
+    values['updated_at'] = func.now()
+
+    stmt = update(credit_card_invoices).where(
+        credit_card_invoices.c.id == invoice_id
+    ).values(**values).returning(credit_card_invoices)
+    
+    result = session.execute(stmt).one()
+
+    # Sync with Expenses
+    expense_values = {}
+    if payload.amount is not None:
+        expense_values['amount'] = result.amount
+    if payload.status is not None:
+        expense_values['status'] = "pago" if result.status == "paid" else "pendente"
+    if payload.due_date is not None:
+        expense_values['due_date'] = result.due_date
+    
+    if expense_values:
+        expense_values['updated_at'] = func.now()
+        session.execute(
+            update(expenses).where(
+                expenses.c.invoice_id == invoice_id
+            ).values(**expense_values)
+        )
+
     return CreditCardInvoiceOut(
         id=result.id,
         account_id=result.account_id,
@@ -198,6 +274,17 @@ def update_invoice_amount(session: Session, invoice_id: UUID, amount_delta: Deci
     ).returning(credit_card_invoices)
     
     result = session.execute(stmt).one()
+
+    # Sync with Expenses
+    session.execute(
+        update(expenses).where(
+            expenses.c.invoice_id == invoice_id
+        ).values(
+            amount=result.amount,
+            updated_at=func.now()
+        )
+    )
+
     return CreditCardInvoiceOut(
         id=result.id,
         account_id=result.account_id,
@@ -280,3 +367,15 @@ def get_account_invoices_summary(session: Session, account_id: UUID):
     next_invoices = invoices[1:]
     
     return current_invoice, next_invoices
+
+def delete_invoice(session: Session, invoice_id: UUID):
+    # Sync with Expenses
+    session.execute(
+        delete(expenses).where(expenses.c.invoice_id == invoice_id)
+    )
+    
+    # Delete Invoice
+    session.execute(
+        delete(credit_card_invoices).where(credit_card_invoices.c.id == invoice_id)
+    )
+    return True

@@ -128,6 +128,7 @@ expenses = Table(
     Column("active", Boolean, nullable=False, server_default="true"),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("invoice_id", UUID(as_uuid=True), nullable=True),
 )
 
 incomes = Table(

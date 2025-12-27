@@ -30,6 +30,7 @@ class ExpenseCreate(BaseModel):
     tags: Optional[List[str]] = None
     notes: Optional[str] = None
     active: bool = True
+    invoice_id: Optional[UUID] = None
 
 
 class ExpenseUpdate(BaseModel):
@@ -57,6 +58,7 @@ class ExpenseUpdate(BaseModel):
     tags: Optional[List[str]] = None
     notes: Optional[str] = None
     active: Optional[bool] = None
+    invoice_id: Optional[UUID] = None
 
 
 class ExpenseOut(BaseModel):
@@ -87,6 +89,7 @@ class ExpenseOut(BaseModel):
     active: bool
     created_at: datetime
     updated_at: datetime
+    invoice_id: Optional[UUID] = None
 
     @field_serializer('amount', 'original_amount', 'interest', 'fine', 'discount', 'total_paid')
     def _ser_amounts(self, v: Decimal | None):
