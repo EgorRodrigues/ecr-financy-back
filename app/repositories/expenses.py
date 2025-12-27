@@ -76,7 +76,7 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
     )
 
 
-def list_expenses(session, limit: int = 50, account: str | None = None, account_type: str | None = None) -> list[ExpenseOut]:
+def list_expenses(session, limit, account: str | None = None, account_type: str | None = None) -> list[ExpenseOut]:
     query = select(
         expenses.c.id,
         expenses.c.amount,
