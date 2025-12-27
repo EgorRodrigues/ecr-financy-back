@@ -247,10 +247,12 @@ def ensure_invoice_for_transaction(session: Session, account_id: UUID, transacti
     return invoice
 
 def get_account_invoices_summary(session: Session, account_id: UUID):
-    # Get all non-paid invoices ordered by due_date
+    # Get all non-paid invoices ordered by due_date, excluding past due dates
+    today = date.today()
     query = select(credit_card_invoices).where(
         credit_card_invoices.c.account_id == account_id,
-        credit_card_invoices.c.status != 'paid'
+        credit_card_invoices.c.status != 'paid',
+        credit_card_invoices.c.due_date >= today
     ).order_by(credit_card_invoices.c.due_date.asc())
     
     rows = session.execute(query).all()
