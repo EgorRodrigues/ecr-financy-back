@@ -25,6 +25,7 @@ class CreditCardInvoiceOut(BaseModel):
     due_date: date
     amount: Decimal
     status: Literal["open", "closed", "paid"]
+    expense_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
 

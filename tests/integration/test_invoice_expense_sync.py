@@ -45,7 +45,8 @@ def test_create_invoice_syncs_expense(session, test_account):
     invoice = create_invoice(session, invoice_data)
     
     # Check Expense
-    stmt = select(expenses).where(expenses.c.invoice_id == invoice.id)
+    assert invoice.expense_id is not None
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
     expense = session.execute(stmt).one_or_none()
     
     assert expense is not None
@@ -72,7 +73,7 @@ def test_update_invoice_amount_syncs_expense(session, test_account):
     update_invoice_amount(session, invoice.id, Decimal("50.00")) # Add 50
     
     # Check Expense
-    stmt = select(expenses).where(expenses.c.invoice_id == invoice.id)
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
     expense = session.execute(stmt).one_or_none()
     
     assert expense.amount == Decimal("150.00")
@@ -99,7 +100,7 @@ def test_update_invoice_properties_syncs_expense(session, test_account):
     update_invoice(session, invoice.id, update_data)
     
     # Check Expense
-    stmt = select(expenses).where(expenses.c.invoice_id == invoice.id)
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
     expense = session.execute(stmt).one_or_none()
     
     assert expense.status == "pago"
@@ -120,14 +121,15 @@ def test_delete_invoice_syncs_expense(session, test_account):
     invoice = create_invoice(session, invoice_data)
     
     # Ensure expense exists
-    stmt = select(expenses).where(expenses.c.invoice_id == invoice.id)
+    assert invoice.expense_id is not None
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
     assert session.execute(stmt).one_or_none() is not None
     
     # Delete Invoice
     delete_invoice(session, invoice.id)
     
     # Check Expense Deleted
-    stmt = select(expenses).where(expenses.c.invoice_id == invoice.id)
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
     assert session.execute(stmt).one_or_none() is None
     
     # Check Invoice Deleted

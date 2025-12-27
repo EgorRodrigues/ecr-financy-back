@@ -128,7 +128,6 @@ expenses = Table(
     Column("active", Boolean, nullable=False, server_default="true"),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    Column("invoice_id", UUID(as_uuid=True), nullable=True),
 )
 
 incomes = Table(
@@ -184,6 +183,7 @@ credit_card_invoices = Table(
     Column("due_date", Date, nullable=False),
     Column("amount", Numeric(18, 2), nullable=False, default=0),
     Column("status", Text, nullable=False, default="open"),  # open, closed, paid
+    Column("expense_id", UUID(as_uuid=True), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     UniqueConstraint("account_id", "period_start", "period_end", name="uq_credit_card_invoices_period"),

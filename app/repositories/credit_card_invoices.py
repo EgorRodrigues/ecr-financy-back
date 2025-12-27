@@ -114,6 +114,7 @@ def get_invoice_by_period(session: Session, account_id: UUID, period_start: date
             due_date=result.due_date,
             amount=result.amount,
             status=result.status,
+            expense_id=result.expense_id,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
@@ -133,6 +134,7 @@ def get_invoice(session: Session, invoice_id: UUID):
             due_date=result.due_date,
             amount=result.amount,
             status=result.status,
+            expense_id=result.expense_id,
             created_at=result.created_at,
             updated_at=result.updated_at
         )
@@ -160,6 +162,7 @@ def list_invoices(session: Session, account_id: UUID | None = None, status: str 
             due_date=row.due_date,
             amount=row.amount,
             status=row.status,
+            expense_id=row.expense_id,
             created_at=row.created_at,
             updated_at=row.updated_at
         )
@@ -167,31 +170,21 @@ def list_invoices(session: Session, account_id: UUID | None = None, status: str 
     ]
 
 def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
-    stmt = insert(credit_card_invoices).values(
-        account_id=payload.account_id,
-        period_start=payload.period_start,
-        period_end=payload.period_end,
-        due_date=payload.due_date,
-        amount=payload.amount,
-        status=payload.status
-    ).returning(credit_card_invoices)
-    
-    result = session.execute(stmt).one()
-
-    # Sync with Expenses
+    # Sync with Expenses first to get ID
     account_name_query = select(accounts.c.name).where(accounts.c.id == payload.account_id)
     account_name = session.execute(account_name_query).scalar_one_or_none() or "Unknown Account"
 
-    expense_status = "pago" if result.status == "paid" else "pendente"
-    description = f"Fatura Cartão - {account_name} - {result.due_date.strftime('%m/%Y')}"
-
+    expense_status = "pago" if payload.status == "paid" else "pendente"
+    description = f"Fatura Cartão - {account_name} - {payload.due_date.strftime('%m/%Y')}"
+    
+    expense_id = uuid4()
+    
     session.execute(
         insert(expenses).values(
-            id=uuid4(),
-            invoice_id=result.id,
-            amount=result.amount,
+            id=expense_id,
+            amount=payload.amount,
             status=expense_status,
-            due_date=result.due_date,
+            due_date=payload.due_date,
             description=description,
             account=account_name,
             active=True,
@@ -199,6 +192,18 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
             updated_at=func.now()
         )
     )
+
+    stmt = insert(credit_card_invoices).values(
+        account_id=payload.account_id,
+        period_start=payload.period_start,
+        period_end=payload.period_end,
+        due_date=payload.due_date,
+        amount=payload.amount,
+        status=payload.status,
+        expense_id=expense_id
+    ).returning(credit_card_invoices)
+    
+    result = session.execute(stmt).one()
 
     return CreditCardInvoiceOut(
         id=result.id,
@@ -208,6 +213,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at
     )
@@ -245,11 +251,11 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
     if payload.due_date is not None:
         expense_values['due_date'] = result.due_date
     
-    if expense_values:
+    if expense_values and current.expense_id:
         expense_values['updated_at'] = func.now()
         session.execute(
             update(expenses).where(
-                expenses.c.invoice_id == invoice_id
+                expenses.c.id == current.expense_id
             ).values(**expense_values)
         )
 
@@ -261,6 +267,7 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at
     )
@@ -276,14 +283,15 @@ def update_invoice_amount(session: Session, invoice_id: UUID, amount_delta: Deci
     result = session.execute(stmt).one()
 
     # Sync with Expenses
-    session.execute(
-        update(expenses).where(
-            expenses.c.invoice_id == invoice_id
-        ).values(
-            amount=result.amount,
-            updated_at=func.now()
+    if result.expense_id:
+        session.execute(
+            update(expenses).where(
+                expenses.c.id == result.expense_id
+            ).values(
+                amount=result.amount,
+                updated_at=func.now()
+            )
         )
-    )
 
     return CreditCardInvoiceOut(
         id=result.id,
@@ -293,6 +301,7 @@ def update_invoice_amount(session: Session, invoice_id: UUID, amount_delta: Deci
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at
     )
@@ -353,6 +362,7 @@ def get_account_invoices_summary(session: Session, account_id: UUID):
             due_date=row.due_date,
             amount=row.amount,
             status=row.status,
+            expense_id=row.expense_id,
             created_at=row.created_at,
             updated_at=row.updated_at
         )
@@ -369,13 +379,19 @@ def get_account_invoices_summary(session: Session, account_id: UUID):
     return current_invoice, next_invoices
 
 def delete_invoice(session: Session, invoice_id: UUID):
-    # Sync with Expenses
-    session.execute(
-        delete(expenses).where(expenses.c.invoice_id == invoice_id)
-    )
-    
+    # Get invoice to find expense_id
+    stmt = select(credit_card_invoices.c.expense_id).where(credit_card_invoices.c.id == invoice_id)
+    expense_id = session.execute(stmt).scalar_one_or_none()
+
     # Delete Invoice
     session.execute(
         delete(credit_card_invoices).where(credit_card_invoices.c.id == invoice_id)
     )
+    
+    # Sync with Expenses
+    if expense_id:
+        session.execute(
+            delete(expenses).where(expenses.c.id == expense_id)
+        )
+    
     return True
