@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "ecr-financy-back"
+version = "0.1.0"
+description = "Backend FastAPI para Controle Financeiro"
+authors = ["Egor Rodrigues <me@egor.soy>"]
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+fastapi = "^0.123.5"
+uvicorn = {version = "^0.38.0", extras = ["standard"]}
+pydantic = "^2.12.5"
+pydantic-settings = "^2.12.0"
+python-dotenv = "^1.2.1"
+httpx = "^0.28.1"
+sqlalchemy = "^2.0.36"
+psycopg = "^3.2.3"
+alembic = "^1.13.2"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.1"
+ruff = "^0.14.7"
+mypy = "^1.19.0"
+taskipy = "^1.14.1"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "cassandra.*"
+ignore_missing_imports = true
+
+[tool.poetry.scripts]
+serve = "uvicorn:main"
+seed-basics = "app.scripts.seed_basics:main"
+
+[tool.taskipy.tasks]
+lint = 'ruff check .'
+lint-fix = 'ruff check . --fix'
+format = 'ruff format .'
+post_format = 'task lint-fix'
+run = 'uvicorn app.main:app --reload --host 0.0.0.0 --port 8000'
+runserver = 'fastapi dev app/main.py'
+test = 'pytest -q'
+test-all = 'pytest -s -x --cov=app -vv'
+post_test = 'coverage html'
+clean = 'rm -rf htmlcov .coverage database.db .*_cache && find . -type d -name "__pycache__" -exec rm -rf {} +; true'
+makemigrations = 'alembic revision --autogenerate -m'
+migrate = 'alembic upgrade head'
