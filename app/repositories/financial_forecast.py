@@ -11,9 +11,29 @@ def get_financial_forecast(
 ) -> List[ForecastItem]:
     results = []
 
-    # Helper to format month
-    def get_month_str(d):
-        return d.strftime("%Y-%m")
+    # Helper to determine cash flow period (fortnightly)
+    # Logic: Income from 1st fortnight pays for 2nd fortnight expenses.
+    #        Income from 2nd fortnight pays for next month's 1st fortnight expenses.
+    def get_period_str(d: date, is_income: bool = False) -> str:
+        year = d.year
+        month = d.month
+        day = d.day
+
+        # Determine current fortnight (1 or 2)
+        fortnight = 1 if day <= 15 else 2
+
+        if is_income:
+            # Shift income forward by one fortnight
+            if fortnight == 1:
+                fortnight = 2
+            else:
+                fortnight = 1
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+
+        return f"{year}-{month:02d}-Q{fortnight}"
 
     # --- Incomes ---
     # Determine effective date: receipt_date if received, else due_date
@@ -55,7 +75,7 @@ def get_financial_forecast(
         results.append(
             ForecastItem(
                 id=str(row.id),
-                month=get_month_str(row.date),
+                month=get_period_str(row.date, is_income=True),
                 category=row.category_name or "Sem Categoria",
                 amount=float(row.amount or 0),
                 status=status_mapped,
@@ -101,7 +121,7 @@ def get_financial_forecast(
         results.append(
             ForecastItem(
                 id=str(row.id),
-                month=get_month_str(row.date),
+                month=get_period_str(row.date, is_income=False),
                 category=row.category_name or "Sem Categoria",
                 amount=float(row.amount or 0),
                 status=status_mapped,
