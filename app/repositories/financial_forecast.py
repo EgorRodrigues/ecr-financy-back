@@ -18,7 +18,11 @@ def get_financial_forecast(
     # --- Incomes ---
     # Determine effective date: receipt_date if received, else due_date
     inc_date_col = case(
-        (incomes.c.status == "recebido", incomes.c.receipt_date), else_=incomes.c.due_date
+        (
+            and_(incomes.c.status == "recebido", incomes.c.receipt_date.is_not(None)),
+            incomes.c.receipt_date,
+        ),
+        else_=incomes.c.due_date,
     )
 
     stmt_incomes = (
@@ -61,7 +65,11 @@ def get_financial_forecast(
 
     # --- Expenses ---
     exp_date_col = case(
-        (expenses.c.status == "pago", expenses.c.payment_date), else_=expenses.c.due_date
+        (
+            and_(expenses.c.status == "pago", expenses.c.payment_date.is_not(None)),
+            expenses.c.payment_date,
+        ),
+        else_=expenses.c.due_date,
     )
 
     stmt_expenses = (
