@@ -16,21 +16,21 @@ router = APIRouter()
 
 @router.post("/", response_model=ContactOut)
 def create(request: Request, payload: ContactCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_contact(session, payload)
 
 
 @router.get("/", response_model=list[ContactOut])
 def list_(request: Request, limit: int = 50):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_contacts(session, limit)
 
 
 @router.get("/{contact_id}", response_model=ContactOut)
 def get(request: Request, contact_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_contact(session, contact_id)
         if not item:
@@ -40,7 +40,7 @@ def get(request: Request, contact_id: UUID):
 
 @router.put("/{contact_id}", response_model=ContactOut)
 def update(request: Request, contact_id: UUID, payload: ContactUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_contact(session, contact_id, payload)
         if not item:
@@ -50,7 +50,7 @@ def update(request: Request, contact_id: UUID, payload: ContactUpdate):
 
 @router.delete("/{contact_id}")
 def delete(request: Request, contact_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_contact(session, contact_id)
     return {"deleted": True}

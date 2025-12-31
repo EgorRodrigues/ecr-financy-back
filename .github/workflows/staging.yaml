@@ -56,10 +56,10 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          flags: '--allow-unauthenticated --port 8000 --service-account cloud-run-sa@spry-metric-460820-i8.iam.gserviceaccount.com'
+          flags: '--allow-unauthenticated --port 8000 --service-account cloud-run-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
           env_vars: |-
-            APP_postgres_host=/cloudsql/spry-metric-460820-i8:us-central1:ecr-financy-back
+            APP_postgres_host=/cloudsql/${{ env.PROJECT_ID }}:us-central1:ecr-financy-back
             APP_postgres_database=financy_db
             APP_postgres_password=hX_y9cV6Oe=SGu{m
             APP_postgres_port=5432

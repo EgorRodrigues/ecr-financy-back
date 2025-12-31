@@ -10,21 +10,21 @@ router = APIRouter()
 
 @router.post("/", response_model=TransactionOut)
 def create_tx(request: Request, payload: TransactionCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_transaction(session, payload)
 
 
 @router.get("/", response_model=list[TransactionOut])
 def list_tx(request: Request, limit: int = 50):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_transactions(session, limit)
 
 
 @router.get("/{tid}", response_model=TransactionOut)
 def get_tx(request: Request, tid: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         tx = get_transaction(session, tid)
         if not tx:

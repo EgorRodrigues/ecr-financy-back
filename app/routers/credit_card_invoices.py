@@ -20,14 +20,14 @@ router = APIRouter()
 def list_(
     request: Request, limit: int = 50, account_id: UUID | None = None, status: str | None = None
 ):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_invoices(session, account_id, status, limit)
 
 
 @router.post("/", response_model=CreditCardInvoiceOut, status_code=status.HTTP_201_CREATED)
 def create(request: Request, payload: CreditCardInvoiceCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         try:
             invoice = create_invoice(session, payload)
@@ -40,7 +40,7 @@ def create(request: Request, payload: CreditCardInvoiceCreate):
 
 @router.get("/{invoice_id}", response_model=CreditCardInvoiceOut)
 def get(request: Request, invoice_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_invoice(session, invoice_id)
         if not item:
@@ -50,7 +50,7 @@ def get(request: Request, invoice_id: UUID):
 
 @router.put("/{invoice_id}", response_model=CreditCardInvoiceOut)
 def update(request: Request, invoice_id: UUID, payload: CreditCardInvoiceUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         try:
             item = update_invoice(session, invoice_id, payload)
@@ -65,7 +65,7 @@ def update(request: Request, invoice_id: UUID, payload: CreditCardInvoiceUpdate)
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete(request: Request, invoice_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         try:
             result = delete_invoice(session, invoice_id)

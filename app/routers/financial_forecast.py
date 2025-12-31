@@ -13,6 +13,6 @@ def get_forecast(
     startDate: date = Query(..., description="Start date (YYYY-MM-DD)"),
     endDate: date = Query(..., description="End date (YYYY-MM-DD)"),
 ):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return get_financial_forecast(session, startDate, endDate)

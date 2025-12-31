@@ -22,14 +22,14 @@ router = APIRouter()
 
 @router.post("/", response_model=CreditCardTransactionOut)
 def create(request: Request, payload: CreditCardTransactionCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_credit_card_transaction(session, payload)
 
 
 @router.get("/summary/{account_id}", response_model=CreditCardSummary)
 def get_summary(request: Request, account_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         summary = get_credit_card_summary(session, account_id)
         if not summary:
@@ -41,14 +41,14 @@ def get_summary(request: Request, account_id: UUID):
 def list_(
     request: Request, limit: int = 50, account: str | None = None, account_type: str | None = None
 ):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_credit_card_transactions(session, limit, account, account_type)
 
 
 @router.get("/{transaction_id}", response_model=CreditCardTransactionOut)
 def get(request: Request, transaction_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_credit_card_transaction(session, transaction_id)
         if not item:
@@ -58,7 +58,7 @@ def get(request: Request, transaction_id: UUID):
 
 @router.put("/{transaction_id}", response_model=CreditCardTransactionOut)
 def update(request: Request, transaction_id: UUID, payload: CreditCardTransactionUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_credit_card_transaction(session, transaction_id, payload)
         if not item:
@@ -68,7 +68,7 @@ def update(request: Request, transaction_id: UUID, payload: CreditCardTransactio
 
 @router.delete("/{transaction_id}")
 def delete(request: Request, transaction_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_credit_card_transaction(session, transaction_id)
     return {"deleted": True}

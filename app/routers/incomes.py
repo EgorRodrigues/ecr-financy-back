@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.post("/", response_model=IncomeOut)
 def create(request: Request, payload: IncomeCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_income(session, payload)
 
@@ -25,14 +25,14 @@ def create(request: Request, payload: IncomeCreate):
 def list_(
     request: Request, limit: int = 50, account: str | None = None, account_type: str | None = None
 ):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_incomes(session, limit, account, account_type)
 
 
 @router.get("/{income_id}", response_model=IncomeOut)
 def get(request: Request, income_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_income(session, income_id)
         if not item:
@@ -42,7 +42,7 @@ def get(request: Request, income_id: UUID):
 
 @router.put("/{income_id}", response_model=IncomeOut)
 def update(request: Request, income_id: UUID, payload: IncomeUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_income(session, income_id, payload)
         if not item:
@@ -52,7 +52,7 @@ def update(request: Request, income_id: UUID, payload: IncomeUpdate):
 
 @router.delete("/{income_id}")
 def delete(request: Request, income_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_income(session, income_id)
     return {"deleted": True}

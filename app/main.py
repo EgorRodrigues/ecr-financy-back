@@ -20,7 +20,7 @@ from app.routers.financial_forecast import router as financial_forecast_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     SessionLocal = connect_postgres(settings)
-    app.state.cassandra_session = SessionLocal
+    app.state.postgres_session = SessionLocal
     yield
 
 

@@ -16,21 +16,21 @@ router = APIRouter()
 
 @router.post("/", response_model=CostCenterOut)
 def create(request: Request, payload: CostCenterCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_cost_center(session, payload)
 
 
 @router.get("/", response_model=list[CostCenterOut])
 def list_(request: Request, limit: int = 50):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_cost_centers(session, limit)
 
 
 @router.get("/{cost_center_id}", response_model=CostCenterOut)
 def get(request: Request, cost_center_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_cost_center(session, cost_center_id)
         if not item:
@@ -40,7 +40,7 @@ def get(request: Request, cost_center_id: UUID):
 
 @router.patch("/{cost_center_id}", response_model=CostCenterOut)
 def update(request: Request, cost_center_id: UUID, payload: CostCenterUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_cost_center(session, cost_center_id, payload)
         if not item:
@@ -50,7 +50,7 @@ def update(request: Request, cost_center_id: UUID, payload: CostCenterUpdate):
 
 @router.delete("/{cost_center_id}")
 def delete(request: Request, cost_center_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_cost_center(session, cost_center_id)
     return {"deleted": True}

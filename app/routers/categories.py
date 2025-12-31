@@ -16,21 +16,21 @@ router = APIRouter()
 
 @router.post("/", response_model=CategoryOut)
 def create(request: Request, payload: CategoryCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_category(session, payload)
 
 
 @router.get("/", response_model=list[CategoryOut])
 def list_(request: Request, limit: int = 50):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_categories(session, limit)
 
 
 @router.get("/{category_id}", response_model=CategoryOut)
 def get(request: Request, category_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_category(session, category_id)
         if not item:
@@ -40,7 +40,7 @@ def get(request: Request, category_id: UUID):
 
 @router.put("/{category_id}", response_model=CategoryOut)
 def update(request: Request, category_id: UUID, payload: CategoryUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_category(session, category_id, payload)
         if not item:
@@ -50,7 +50,7 @@ def update(request: Request, category_id: UUID, payload: CategoryUpdate):
 
 @router.delete("/{category_id}")
 def delete(request: Request, category_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_category(session, category_id)
     return {"deleted": True}

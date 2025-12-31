@@ -16,7 +16,7 @@ router = APIRouter()
 
 @router.post("/", response_model=AccountOut)
 def create(request: Request, payload: AccountCreate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return create_account(session, payload)
 
@@ -25,14 +25,14 @@ def create(request: Request, payload: AccountCreate):
 def list_(
     request: Request, limit: int = 50, account: str | None = None, account_type: str | None = None
 ):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         return list_accounts(session, limit, account, account_type)
 
 
 @router.get("/{account_id}", response_model=AccountOut)
 def get(request: Request, account_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = get_account(session, account_id)
         if not item:
@@ -42,7 +42,7 @@ def get(request: Request, account_id: UUID):
 
 @router.put("/{account_id}", response_model=AccountOut)
 def update(request: Request, account_id: UUID, payload: AccountUpdate):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         item = update_account(session, account_id, payload)
         if not item:
@@ -52,7 +52,7 @@ def update(request: Request, account_id: UUID, payload: AccountUpdate):
 
 @router.delete("/{account_id}")
 def delete(request: Request, account_id: UUID):
-    SessionLocal = request.app.state.cassandra_session
+    SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
         delete_account(session, account_id)
     return {"deleted": True}

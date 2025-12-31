@@ -57,7 +57,7 @@ def client(session):
         def __exit__(self, exc_type, exc_val, exc_tb):
             pass
 
-    app.state.cassandra_session = MockSessionLocal()
+    app.state.postgres_session = MockSessionLocal()
 
     with TestClient(app) as c:
         yield c
