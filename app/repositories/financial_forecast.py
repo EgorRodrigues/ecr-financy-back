@@ -11,29 +11,57 @@ def get_financial_forecast(
 ) -> List[ForecastItem]:
     results = []
 
-    # Helper to determine cash flow period (fortnightly)
+    # Adjust start_date and end_date to cover full financial months
+    # Financial Month X starts on (Month X-1)-start_day and ends on (Month X)-end_day
+    
+    # 1. Adjust Start Date
+    s_day = start_date.day
+    s_month = start_date.month
+    s_year = start_date.year
+    start_day = 16
+    end_day = 15
+    
+    if s_day >= start_day:
+        # Already in the new financial month. Start is 26th of current month.
+        start_date = date(s_year, s_month, start_day)
+    else:
+        # In the main body. Start is 26th of previous month.
+        if s_month == 1:
+            start_date = date(s_year - 1, 12, start_day)
+        else:
+            start_date = date(s_year, s_month - 1, start_day)
+
+    # 2. Adjust End Date
+    e_day = end_date.day
+    e_month = end_date.month
+    e_year = end_date.year
+    
+    if e_day >= 26:
+        # In the new financial month. End is 25th of next month.
+        if e_month == 12:
+            end_date = date(e_year + 1, 1, end_day)
+        else:
+            end_date = date(e_year, e_month + 1, end_day)
+    else:
+        # In the main body. End is 25th of current month.
+        end_date = date(e_year, e_month, end_day)
+
+    # Helper to determine cash flow period
     # Logic: Income from 1st fortnight pays for 2nd fortnight expenses.
     #        Income from 2nd fortnight pays for next month's 1st fortnight expenses.
-    def get_period_str(d: date, is_income: bool = False) -> str:
+    def get_period_str(d: date) -> str:
         year = d.year
         month = d.month
         day = d.day
 
-        # Determine current fortnight (1 or 2)
-        fortnight = 1 if day <= 15 else 2
+        # Financial month starts on the 26th of the previous month.
+        if day >= start_day:
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
 
-        if is_income:
-            # Shift income forward by one fortnight
-            if fortnight == 1:
-                fortnight = 2
-            else:
-                fortnight = 1
-                month += 1
-                if month > 12:
-                    month = 1
-                    year += 1
-
-        return f"{year}-{month:02d}-Q{fortnight}"
+        return f"{year}-{month:02d}"
 
     # --- Incomes ---
     # Determine effective date: receipt_date if received, else due_date
@@ -75,7 +103,7 @@ def get_financial_forecast(
         results.append(
             ForecastItem(
                 id=str(row.id),
-                month=get_period_str(row.date, is_income=True),
+                month=get_period_str(row.date),
                 category=row.category_name or "Sem Categoria",
                 amount=float(row.amount or 0),
                 status=status_mapped,
@@ -121,7 +149,7 @@ def get_financial_forecast(
         results.append(
             ForecastItem(
                 id=str(row.id),
-                month=get_period_str(row.date, is_income=False),
+                month=get_period_str(row.date),
                 category=row.category_name or "Sem Categoria",
                 amount=float(row.amount or 0),
                 status=status_mapped,
