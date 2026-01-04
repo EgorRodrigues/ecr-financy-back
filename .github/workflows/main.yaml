@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - main
-
 env:
-  REGION: europe-west1
+  REGION: us-central1
   PROJECT_ID: spry-metric-460820-i8
   SERVICE: ecr-financy-back
 
@@ -32,8 +31,8 @@ jobs:
       - name: Build and Push Container
         run: |-
           gcloud auth configure-docker
-          docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}" .
-          docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}"
+          docker build -t "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}" .
+          docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
 
   deploy:
     needs: build
@@ -54,12 +53,13 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           project_id: ${{ env.PROJECT_ID }}
-          service: ${{ env.SERVICE }}
+          service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
-          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+          image: gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          flags: '--allow-unauthenticated --port 8000 --service-account cloud-run-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
           env_vars: |-
-            APP_postgres_host=/cloudsql/spry-metric-460820-i8:us-central1:ecr-financy-back
+            APP_postgres_host=/cloudsql/${{ env.PROJECT_ID }}:us-central1:ecr-financy-back
             APP_postgres_database=financy_db
             APP_postgres_password=hX_y9cV6Oe=SGu{m
             APP_postgres_port=5432

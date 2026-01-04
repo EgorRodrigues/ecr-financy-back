@@ -23,11 +23,15 @@ def create(request: Request, payload: ExpenseCreate):
 
 @router.get("/", response_model=list[ExpenseOut])
 def list_(
-    request: Request, limit: int = 1000, account: str | None = None, account_type: str | None = None
+    request: Request,
+    limit: int = 1000,
+    account: str | None = None,
+    account_type: str | None = None,
+    status: str | None = None,
 ):
     SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
-        return list_expenses(session, limit, account, account_type)
+        return list_expenses(session, limit, account, account_type, status)
 
 
 @router.get("/{expense_id}", response_model=ExpenseOut)

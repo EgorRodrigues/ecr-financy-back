@@ -3,11 +3,11 @@ name: Deploy to Cloud Run - Staging
 on:
   push:
     branches:
-      - staging
+      - stg
 env:
   REGION: us-central1
   PROJECT_ID: spry-metric-460820-i8
-  SERVICE_NAME: ecr-financy-back
+  SERVICE_NAME: ecr-financy-back-stg
 
 
 jobs:

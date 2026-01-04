@@ -77,7 +77,11 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
 
 
 def list_expenses(
-    session, limit, account: str | None = None, account_type: str | None = None
+    session,
+    limit,
+    account: str | None = None,
+    account_type: str | None = None,
+    status: str | None = None,
 ) -> list[ExpenseOut]:
     query = select(
         expenses.c.id,
@@ -115,6 +119,9 @@ def list_expenses(
     if account_type:
         query = query.join(accounts, expenses.c.account == func.cast(accounts.c.id, Text))
         query = query.where(accounts.c.type == account_type)
+
+    if status:
+        query = query.where(expenses.c.status == status)
 
     rows = session.execute(query.limit(limit)).all()
     return [

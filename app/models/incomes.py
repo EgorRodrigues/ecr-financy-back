@@ -16,16 +16,16 @@ class IncomeCreate(BaseModel):
     fine: Optional[Decimal] = None
     discount: Optional[Decimal] = None
     total_received: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
+    category_id: Optional[UUID] = None
+    subcategory_id: Optional[UUID] = None
+    cost_center_id: Optional[UUID] = None
+    contact_id: Optional[UUID] = None
     description: Optional[str] = None
     document: Optional[str] = None
     receiving_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"]] = (
         None
     )
-    account: Optional[str] = None
+    account: Optional[UUID] = None
     recurrence: Optional[bool] = None
     competence: Optional[str] = None
     project: Optional[str] = None
@@ -45,16 +45,16 @@ class IncomeUpdate(BaseModel):
     fine: Optional[Decimal] = None
     discount: Optional[Decimal] = None
     total_received: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
+    category_id: Optional[UUID] = None
+    subcategory_id: Optional[UUID] = None
+    cost_center_id: Optional[UUID] = None
+    contact_id: Optional[UUID] = None
     description: Optional[str] = None
     document: Optional[str] = None
     receiving_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"]] = (
         None
     )
-    account: Optional[str] = None
+    account: Optional[UUID] = None
     recurrence: Optional[bool] = None
     competence: Optional[str] = None
     project: Optional[str] = None
@@ -75,16 +75,16 @@ class IncomeOut(BaseModel):
     fine: Optional[Decimal] = None
     discount: Optional[Decimal] = None
     total_received: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
+    category_id: Optional[UUID] = None
+    subcategory_id: Optional[UUID] = None
+    cost_center_id: Optional[UUID] = None
+    contact_id: Optional[UUID] = None
     description: Optional[str] = None
     document: Optional[str] = None
     receiving_method: Optional[Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"]] = (
         None
     )
-    account: Optional[str] = None
+    account: Optional[UUID] = None
     recurrence: Optional[bool] = None
     competence: Optional[str] = None
     project: Optional[str] = None

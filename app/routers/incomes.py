@@ -23,11 +23,15 @@ def create(request: Request, payload: IncomeCreate):
 
 @router.get("/", response_model=list[IncomeOut])
 def list_(
-    request: Request, limit: int = 50, account: str | None = None, account_type: str | None = None
+    request: Request,
+    limit: int = 50,
+    account: str | None = None,
+    account_type: str | None = None,
+    status: str | None = None,
 ):
     SessionLocal = request.app.state.postgres_session
     with SessionLocal() as session:
-        return list_incomes(session, limit, account, account_type)
+        return list_incomes(session, limit, account, account_type, status)
 
 
 @router.get("/{income_id}", response_model=IncomeOut)

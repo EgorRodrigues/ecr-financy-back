@@ -77,7 +77,11 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
 
 
 def list_incomes(
-    session, limit: int = 50, account: str | None = None, account_type: str | None = None
+    session,
+    limit: int = 50,
+    account: str | None = None,
+    account_type: str | None = None,
+    status: str | None = None,
 ) -> list[IncomeOut]:
     query = select(
         incomes.c.id,
@@ -115,6 +119,9 @@ def list_incomes(
     if account_type:
         query = query.join(accounts, incomes.c.account == func.cast(accounts.c.id, Text))
         query = query.where(accounts.c.type == account_type)
+
+    if status:
+        query = query.where(incomes.c.status == status)
 
     rows = session.execute(query.limit(limit)).all()
     return [
