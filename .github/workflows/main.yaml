@@ -7,7 +7,7 @@ on:
 env:
   REGION: us-central1
   PROJECT_ID: spry-metric-460820-i8
-  SERVICE: ecr-financy-back
+  SERVICE_NAME: ecr-financy-back
 
 
 jobs:
