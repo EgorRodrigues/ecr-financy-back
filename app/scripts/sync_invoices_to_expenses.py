@@ -5,6 +5,7 @@ from app.db.postgres import (
     connect_postgres,
     close_postgres,
     credit_card_invoices,
+    credit_card_transactions,
     expenses,
     accounts,
 )
@@ -24,10 +25,54 @@ def main() -> None:
         synced_count = 0
         skipped_count = 0
         linked_existing_count = 0
+        corrected_amount_count = 0
 
         for invoice in invoices:
+            # 1.1 Recalculate Invoice Amount based on Transactions
+            sum_stmt = select(func.sum(credit_card_transactions.c.amount)).where(
+                credit_card_transactions.c.invoice_id == invoice.id,
+                credit_card_transactions.c.active == True,
+            )
+            calculated_amount = session.execute(sum_stmt).scalar() or 0
+
+            # Use calculated_amount for logic, and update DB if different
+            current_invoice_amount = invoice.amount
+
+            if calculated_amount != invoice.amount:
+                print(
+                    f"Correcting invoice {invoice.id} amount from {invoice.amount} to {calculated_amount}"
+                )
+                session.execute(
+                    update(credit_card_invoices)
+                    .where(credit_card_invoices.c.id == invoice.id)
+                    .values(amount=calculated_amount)
+                )
+                current_invoice_amount = calculated_amount
+                corrected_amount_count += 1
+
             # 2. Check if expense exists (linked in invoice)
             if invoice.expense_id:
+                # Check if expense amount matches current_invoice_amount (Sync update)
+                existing_linked_expense_query = select(expenses.c.amount).where(
+                    expenses.c.id == invoice.expense_id
+                )
+                existing_linked_expense_amount = session.execute(
+                    existing_linked_expense_query
+                ).scalar()
+
+                if (
+                    existing_linked_expense_amount is not None
+                    and existing_linked_expense_amount != current_invoice_amount
+                ):
+                    print(
+                        f"Updating linked expense {invoice.expense_id} amount from {existing_linked_expense_amount} to {current_invoice_amount}"
+                    )
+                    session.execute(
+                        update(expenses)
+                        .where(expenses.c.id == invoice.expense_id)
+                        .values(amount=current_invoice_amount)
+                    )
+
                 skipped_count += 1
                 continue
 
@@ -44,7 +89,7 @@ def main() -> None:
             # 4. Check for existing orphan expense (Heuristic match)
             # Since we removed invoice_id from expenses, we match by data to avoid duplicates
             existing_expense_query = select(expenses).where(
-                expenses.c.amount == invoice.amount,
+                expenses.c.amount == current_invoice_amount,
                 expenses.c.due_date == invoice.due_date,
                 expenses.c.description == description,
             )
@@ -60,7 +105,7 @@ def main() -> None:
                 session.execute(
                     insert(expenses).values(
                         id=expense_id,
-                        amount=invoice.amount,
+                        amount=current_invoice_amount,
                         status=expense_status,
                         due_date=invoice.due_date,
                         description=description,
@@ -84,7 +129,7 @@ def main() -> None:
 
         session.commit()
         print(
-            f"Sync complete. Created {synced_count} expenses. Linked {linked_existing_count} existing. Skipped {skipped_count} already linked."
+            f"Sync complete. Created {synced_count} expenses. Linked {linked_existing_count} existing. Skipped {skipped_count} already linked. Corrected Amounts: {corrected_amount_count}"
         )
 
     except Exception as e:
