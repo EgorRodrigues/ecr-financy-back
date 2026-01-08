@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     postgres_database: Optional[str] = "ecr_financy"
     postgres_username: Optional[str] = "postgres"
     postgres_password: Optional[str] = "postgres"
+    
+    jwt_secret_key: str = "seu-segredo-super-seguro"
+    jwt_algorithm: str = "HS256"
 
 
 settings = Settings()

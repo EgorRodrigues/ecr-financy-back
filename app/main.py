@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from app.core.security import verify_token
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.postgres import connect_postgres
@@ -27,7 +28,7 @@ async def lifespan(app: FastAPI):
 origins = ["*"]
 
 
-app = FastAPI(title="ECR Financy API", lifespan=lifespan)
+app = FastAPI(title="ECR Financy API", lifespan=lifespan, dependencies=[Depends(verify_token)])
 
 
 app.add_middleware(
