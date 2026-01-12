@@ -1,6 +1,8 @@
 from datetime import date
-from fastapi import APIRouter, Request, Query
+from fastapi import APIRouter, Request, Query, Depends
 from typing import List
+from sqlalchemy.orm import Session
+from app.dependencies import get_db
 from app.models.financial_forecast import ForecastItem
 from app.repositories.financial_forecast import get_financial_forecast
 
@@ -9,10 +11,8 @@ router = APIRouter()
 
 @router.get("/", response_model=List[ForecastItem])
 def get_forecast(
-    request: Request,
     startDate: date = Query(..., description="Start date (YYYY-MM-DD)"),
     endDate: date = Query(..., description="End date (YYYY-MM-DD)"),
+    session: Session = Depends(get_db)
 ):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        return get_financial_forecast(session, startDate, endDate)
+    return get_financial_forecast(session, startDate, endDate)

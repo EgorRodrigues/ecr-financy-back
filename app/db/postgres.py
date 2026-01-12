@@ -14,12 +14,14 @@ from sqlalchemy import (
     text,
     UniqueConstraint,
     Uuid,
+    inspect,
 )
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.types import TypeDecorator, JSON
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from uuid import uuid4
 from urllib.parse import quote_plus
+from app.core.config import settings
 
 
 class CustomArray(TypeDecorator):
@@ -45,8 +47,64 @@ def ARRAY(item_type):
 
 
 _engine = None
-_SessionLocal = None
 metadata = MetaData()
+
+
+def get_engine():
+    global _engine
+    if _engine:
+        return _engine
+
+    user = quote_plus(settings.postgres_username or "postgres")
+    password = quote_plus(settings.postgres_password or "postgres")
+    db = quote_plus(settings.postgres_database or "ecr_financy")
+    host = settings.postgres_host or "127.0.0.1"
+
+    if host.startswith("/"):
+        dsn = f"postgresql+psycopg://{user}:{password}@/{db}?host={host}"
+    else:
+        host = quote_plus(host)
+        port = settings.postgres_port or 5432
+        dsn = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
+
+    _engine = create_engine(dsn, pool_pre_ping=True)
+    return _engine
+
+
+def ensure_tenant_schema(schema_name: str):
+    """
+    Ensures that the tenant schema exists and all tables are created within it.
+    """
+    engine = get_engine()
+    
+    with engine.connect() as connection:
+        # Check if schema exists
+        schema_exists = connection.execute(
+            text(f"SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{schema_name}'")
+        ).scalar()
+
+        if not schema_exists:
+            # Create schema
+            connection.execute(text(f"CREATE SCHEMA {schema_name}"))
+            connection.commit()
+            
+            # Create tables in the new schema
+            # We need to reflect the metadata to the new schema or just create all
+            # Since metadata is bound to 'public' by default (None), we can try passing schema to create_all
+            # but create_all usually uses the schema defined in Table args.
+            # However, if we change search_path, create_all might work if we don't specify schema in Table.
+            # Our Tables don't have schema specified, so they default to default schema.
+            
+            # Set search path for this connection to create tables
+            connection.execute(text(f"SET search_path TO {schema_name}"))
+            metadata.create_all(connection)
+            connection.commit()
+
+
+def connect_postgres(settings_obj):
+    # Backward compatibility if needed, or just initialize engine
+    get_engine()
+    return sessionmaker(autocommit=False, autoflush=False, bind=_engine)
 
 categories = Table(
     "categories",
@@ -244,31 +302,6 @@ credit_card_transactions = Table(
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
-
-
-def _build_dsn(_settings) -> str:
-    user = quote_plus(_settings.postgres_username or "postgres")
-    password = quote_plus(_settings.postgres_password or "postgres")
-    db = quote_plus(_settings.postgres_database or "ecr_financy")
-    host = _settings.postgres_host or "127.0.0.1"
-
-    if host.startswith("/"):
-        # Unix socket
-        return f"postgresql+psycopg://{user}:{password}@/{db}?host={host}"
-    else:
-        # TCP
-        host = quote_plus(host)
-        port = _settings.postgres_port or 5432
-        return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{db}"
-
-
-def connect_postgres(_settings) -> sessionmaker:
-    global _engine, _SessionLocal
-    if _engine is None:
-        dsn = _build_dsn(_settings)
-        _engine = create_engine(dsn, echo=False, future=True)
-        _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False, future=True)
-    return _SessionLocal
 
 
 def close_postgres(session) -> None:

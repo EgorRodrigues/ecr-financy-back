@@ -1,9 +1,6 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
-from app.core.security import verify_token
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.db.postgres import connect_postgres
 from app.routers.health import router as health_router
 from app.routers.transactions import router as transactions_router
 from app.routers.categories import router as categories_router
@@ -20,15 +17,15 @@ from app.routers.financial_forecast import router as financial_forecast_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    SessionLocal = connect_postgres(settings)
-    app.state.postgres_session = SessionLocal
+    # Startup logic if needed
     yield
+    # Shutdown logic if needed
 
 
 origins = ["*"]
 
 
-app = FastAPI(title="ECR Financy API", lifespan=lifespan, dependencies=[Depends(verify_token)])
+app = FastAPI(title="ECR Financy API", lifespan=lifespan)
 
 
 app.add_middleware(

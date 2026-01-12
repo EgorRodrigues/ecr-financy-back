@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi import Request
 from uuid import UUID
+from sqlalchemy.orm import Session
+from app.dependencies import get_db
 from app.models.transactions import TransactionCreate, TransactionOut
 from app.repositories.transactions import create_transaction, list_transactions, get_transaction
 
@@ -9,24 +11,18 @@ router = APIRouter()
 
 
 @router.post("/", response_model=TransactionOut)
-def create_tx(request: Request, payload: TransactionCreate):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        return create_transaction(session, payload)
+def create_tx(payload: TransactionCreate, session: Session = Depends(get_db)):
+    return create_transaction(session, payload)
 
 
 @router.get("/", response_model=list[TransactionOut])
-def list_tx(request: Request, limit: int = 50):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        return list_transactions(session, limit)
+def list_tx(limit: int = 50, session: Session = Depends(get_db)):
+    return list_transactions(session, limit)
 
 
 @router.get("/{tid}", response_model=TransactionOut)
-def get_tx(request: Request, tid: UUID):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        tx = get_transaction(session, tid)
-        if not tx:
-            raise HTTPException(status_code=404, detail="Transaction not found")
-        return tx
+def get_tx(tid: UUID, session: Session = Depends(get_db)):
+    tx = get_transaction(session, tid)
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return tx

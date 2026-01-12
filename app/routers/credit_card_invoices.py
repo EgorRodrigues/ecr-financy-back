@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status, Depends
 from uuid import UUID
+from sqlalchemy.orm import Session
+from app.dependencies import get_db
 from app.models.credit_card_invoices import (
     CreditCardInvoiceOut,
     CreditCardInvoiceCreate,
     CreditCardInvoiceUpdate,
+    CreditCardInvoiceOut,
 )
 from app.repositories.credit_card_invoices import (
     list_invoices,
@@ -18,64 +21,54 @@ router = APIRouter()
 
 @router.get("/", response_model=list[CreditCardInvoiceOut])
 def list_(
-    request: Request, limit: int = 50, account_id: UUID | None = None, status: str | None = None
+    limit: int = 50,
+    account_id: UUID | None = None,
+    status: str | None = None,
+    session: Session = Depends(get_db)
 ):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        return list_invoices(session, account_id, status, limit)
+    return list_invoices(session, account_id, status, limit)
 
 
 @router.post("/", response_model=CreditCardInvoiceOut, status_code=status.HTTP_201_CREATED)
-def create(request: Request, payload: CreditCardInvoiceCreate):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        try:
-            invoice = create_invoice(session, payload)
-            session.commit()
-            return invoice
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=400, detail=str(e))
+def create(payload: CreditCardInvoiceCreate, session: Session = Depends(get_db)):
+    try:
+        invoice = create_invoice(session, payload)
+        session.commit()
+        return invoice
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{invoice_id}", response_model=CreditCardInvoiceOut)
-def get(request: Request, invoice_id: UUID):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        item = get_invoice(session, invoice_id)
-        if not item:
-            raise HTTPException(status_code=404, detail="Credit Card Invoice not found")
-        return item
+def get(invoice_id: UUID, session: Session = Depends(get_db)):
+    item = get_invoice(session, invoice_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Credit Card Invoice not found")
+    return item
 
 
 @router.put("/{invoice_id}", response_model=CreditCardInvoiceOut)
-def update(request: Request, invoice_id: UUID, payload: CreditCardInvoiceUpdate):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        try:
-            item = update_invoice(session, invoice_id, payload)
-            if not item:
-                raise HTTPException(status_code=404, detail="Credit Card Invoice not found")
-            session.commit()
-            return item
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=400, detail=str(e))
+def update(invoice_id: UUID, payload: CreditCardInvoiceUpdate, session: Session = Depends(get_db)):
+    try:
+        item = update_invoice(session, invoice_id, payload)
+        if not item:
+            raise HTTPException(status_code=404, detail="Credit Card Invoice not found")
+        session.commit()
+        return item
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(request: Request, invoice_id: UUID):
-    SessionLocal = request.app.state.postgres_session
-    with SessionLocal() as session:
-        try:
-            result = delete_invoice(session, invoice_id)
-            if not result:  # delete_invoice returns True usually, but if ID not found? delete_invoice doesn't check existence first in my impl
-                # Actually delete_invoice just runs delete statement.
-                # We should probably check existence first if we want 404.
-                # But for now, let's just commit.
-                pass
-            session.commit()
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            session.rollback()
-            raise HTTPException(status_code=400, detail=str(e))
+def delete(invoice_id: UUID, session: Session = Depends(get_db)):
+    try:
+        result = delete_invoice(session, invoice_id)
+        if not result:
+            pass
+        session.commit()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
