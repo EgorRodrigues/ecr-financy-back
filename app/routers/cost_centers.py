@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi import Request
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.cost_centers import CostCenterCreate, CostCenterUpdate, CostCenterOut

@@ -14,11 +14,10 @@ from sqlalchemy import (
     text,
     UniqueConstraint,
     Uuid,
-    inspect,
 )
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.types import TypeDecorator, JSON
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from uuid import uuid4
 from urllib.parse import quote_plus
 from app.core.config import settings

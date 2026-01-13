@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request, Response, status, Depends
+from fastapi import APIRouter, HTTPException, Response, status, Depends
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.models.credit_card_invoices import (
-    CreditCardInvoiceOut,
     CreditCardInvoiceCreate,
     CreditCardInvoiceUpdate,
     CreditCardInvoiceOut,

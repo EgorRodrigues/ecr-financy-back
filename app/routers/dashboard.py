@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from fastapi import Request
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.models.dashboard import DashboardOut

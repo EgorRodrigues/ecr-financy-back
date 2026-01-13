@@ -1,5 +1,5 @@
 from datetime import date
-from fastapi import APIRouter, Request, Query, Depends
+from fastapi import APIRouter, Query, Depends
 from typing import List
 from sqlalchemy.orm import Session
 from app.dependencies import get_db

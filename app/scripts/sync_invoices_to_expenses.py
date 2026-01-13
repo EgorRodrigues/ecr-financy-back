@@ -31,7 +31,7 @@ def main() -> None:
             # 1.1 Recalculate Invoice Amount based on Transactions
             sum_stmt = select(func.sum(credit_card_transactions.c.amount)).where(
                 credit_card_transactions.c.invoice_id == invoice.id,
-                credit_card_transactions.c.active == True,
+                credit_card_transactions.c.active,
             )
             calculated_amount = session.execute(sum_stmt).scalar() or 0
 

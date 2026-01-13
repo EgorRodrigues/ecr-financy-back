@@ -13,6 +13,9 @@ from app.routers.incomes import router as incomes_router
 from app.routers.accounts import router as accounts_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.financial_forecast import router as financial_forecast_router
+from app.routers.reports import router as reports_router
+from app.routers.reports_accounts import router as reports_accounts_router
+from app.routers.reports_incomes import router as reports_incomes_router
 
 
 @asynccontextmanager
@@ -55,3 +58,6 @@ app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(
     financial_forecast_router, prefix="/financial-forecast", tags=["financial-forecast"]
 )
+app.include_router(reports_router, prefix="/reports", tags=["reports"])
+app.include_router(reports_accounts_router, prefix="/reports", tags=["reports"])
+app.include_router(reports_incomes_router, prefix="/reports", tags=["reports"])
