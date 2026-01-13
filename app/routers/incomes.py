@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.dependencies import get_db
-from app.models.incomes import IncomeCreate, IncomeUpdate, IncomeOut
+from app.models.incomes import IncomeCreate, IncomeOut, IncomeUpdate
 from app.repositories.incomes import (
     create_income,
-    list_incomes,
-    get_income,
-    update_income,
     delete_income,
+    get_income,
+    list_incomes,
+    update_income,
 )
-
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ def list_(
     account: str | None = None,
     account_type: str | None = None,
     status: str | None = None,
-    session: Session = Depends(get_db)
+    session: Session = Depends(get_db),
 ):
     return list_incomes(session, limit, account, account_type, status)
 

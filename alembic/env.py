@@ -1,9 +1,10 @@
 from urllib.parse import quote_plus
+
+from sqlalchemy import create_engine, pool
+
 from alembic import context
-from sqlalchemy import pool
-from sqlalchemy import create_engine
-from app.db.postgres import metadata
 from app.core.config import settings
+from app.db.postgres import metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

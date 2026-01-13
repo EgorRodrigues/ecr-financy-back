@@ -1,7 +1,8 @@
-from typing import Optional, Literal
-from pydantic import BaseModel, field_validator, model_validator
-from uuid import UUID
 from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, field_validator, model_validator
 
 
 def _digits(s: str) -> str:
@@ -52,12 +53,12 @@ class ContactCreate(BaseModel):
     type: Literal["customer", "supplier"]
     person_type: Literal["individual", "company"] | str
     name: str
-    document: Optional[str] = None
-    email: Optional[str] = None
-    phone_e164: Optional[str] = None
-    phone_local: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
+    document: str | None = None
+    email: str | None = None
+    phone_e164: str | None = None
+    phone_local: str | None = None
+    address: str | None = None
+    notes: str | None = None
     active: bool = True
 
     @field_validator("person_type")
@@ -84,16 +85,16 @@ class ContactCreate(BaseModel):
 
 
 class ContactUpdate(BaseModel):
-    type: Optional[Literal["customer", "supplier"]] = None
-    person_type: Optional[Literal["individual", "company"] | str] = None
-    name: Optional[str] = None
-    document: Optional[str] = None
-    email: Optional[str] = None
-    phone_e164: Optional[str] = None
-    phone_local: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
-    active: Optional[bool] = None
+    type: Literal["customer", "supplier"] | None = None
+    person_type: Literal["individual", "company"] | str | None = None
+    name: str | None = None
+    document: str | None = None
+    email: str | None = None
+    phone_e164: str | None = None
+    phone_local: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    active: bool | None = None
 
     @field_validator("person_type")
     def normalize_person_type(cls, v):
@@ -128,12 +129,12 @@ class ContactOut(BaseModel):
     type: Literal["customer", "supplier"]
     person_type: Literal["individual", "company"]
     name: str
-    document: Optional[str] = None
-    email: Optional[str] = None
-    phone_e164: Optional[str] = None
-    phone_local: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
+    document: str | None = None
+    email: str | None = None
+    phone_e164: str | None = None
+    phone_local: str | None = None
+    address: str | None = None
+    notes: str | None = None
     active: bool
     created_at: datetime
     updated_at: datetime

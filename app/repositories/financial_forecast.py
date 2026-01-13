@@ -1,26 +1,27 @@
 from datetime import date
-from typing import List
-from sqlalchemy import select, case, and_, Text, cast
+
+from sqlalchemy import Text, and_, case, cast, select
 from sqlalchemy.orm import Session
+
+from app.db.postgres import categories, expenses, incomes
 from app.models.financial_forecast import ForecastItem
-from app.db.postgres import incomes, expenses, categories
 
 
 def get_financial_forecast(
     session: Session, start_date: date, end_date: date
-) -> List[ForecastItem]:
+) -> list[ForecastItem]:
     results = []
 
     # Adjust start_date and end_date to cover full financial months
     # Financial Month X starts on (Month X-1)-start_day and ends on (Month X)-end_day
-    
+
     # 1. Adjust Start Date
     s_day = start_date.day
     s_month = start_date.month
     s_year = start_date.year
     start_day = 16
     end_day = 15
-    
+
     if s_day >= start_day:
         # Already in the new financial month. Start is 26th of current month.
         start_date = date(s_year, s_month, start_day)
@@ -35,7 +36,7 @@ def get_financial_forecast(
     e_day = end_date.day
     e_month = end_date.month
     e_year = end_date.year
-    
+
     if e_day >= 26:
         # In the new financial month. End is 25th of next month.
         if e_month == 12:

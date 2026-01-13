@@ -1,13 +1,15 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
-from app.models.accounts import AccountCreate, AccountUpdate, AccountOut
+
+from sqlalchemy import delete, insert, select, update
+
 from app.db.postgres import accounts
+from app.models.accounts import AccountCreate, AccountOut, AccountUpdate
 
 
 def create_account(session, data: AccountCreate) -> AccountOut:
     aid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(accounts).values(
             id=aid,
@@ -143,7 +145,7 @@ def update_account(session, aid: UUID, data: AccountUpdate) -> AccountOut | None
     new_closing_day = data.closing_day if data.closing_day is not None else current.closing_day
     new_due_day = data.due_day if data.due_day is not None else current.due_day
     new_active = data.active if data.active is not None else current.active
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(accounts)
         .where(accounts.c.id == aid)

@@ -1,8 +1,11 @@
+from typing import Any
 from uuid import UUID
+
+from sqlalchemy import delete, func, insert, select, update
 from sqlalchemy.orm import Session
-from sqlalchemy import select, insert, update, delete, func
-from app.models.cost_centers import CostCenterCreate, CostCenterUpdate, CostCenterOut
+
 from app.db.postgres import cost_centers
+from app.models.cost_centers import CostCenterCreate, CostCenterOut, CostCenterUpdate
 
 
 def create_cost_center(session: Session, data: CostCenterCreate) -> CostCenterOut:
@@ -113,6 +116,6 @@ def update_cost_center(
 
 def delete_cost_center(session: Session, cost_center_id: UUID) -> bool:
     stmt = delete(cost_centers).where(cost_centers.c.id == cost_center_id)
-    result = session.execute(stmt)
+    result: Any = session.execute(stmt)
     session.commit()
     return result.rowcount > 0

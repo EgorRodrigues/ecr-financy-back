@@ -1,16 +1,18 @@
-import pytest
-from uuid import uuid4
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
+
+import pytest
 from sqlalchemy import insert, select
-from app.db.postgres import accounts, expenses, credit_card_invoices
+
+from app.db.postgres import accounts, credit_card_invoices, expenses
+from app.models.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
 from app.repositories.credit_card_invoices import (
     create_invoice,
+    delete_invoice,
     update_invoice,
     update_invoice_amount,
-    delete_invoice,
 )
-from app.models.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
 
 
 @pytest.fixture

@@ -1,7 +1,9 @@
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 from sqlalchemy import insert
+
 from app.db.postgres import accounts
 from app.repositories.credit_card_invoices import ensure_invoice_for_transaction
 
@@ -43,7 +45,8 @@ def test_invoice_creation_dates(session, test_account, transaction_date, expecte
     invoice = ensure_invoice_for_transaction(session, test_account, transaction_date)
 
     assert invoice.due_date == expected_due_date, (
-        f"For transaction on {transaction_date}, expected due date {expected_due_date}, got {invoice.due_date}"
+        f"For transaction on {transaction_date}, expected due date {expected_due_date}, "
+        f"got {invoice.due_date}"
     )
 
     assert invoice.account_id == test_account

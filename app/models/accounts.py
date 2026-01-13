@@ -1,8 +1,8 @@
-from typing import Optional, Literal
-from pydantic import BaseModel, field_validator
-from uuid import UUID
 from datetime import datetime
+from typing import Literal
+from uuid import UUID
 
+from pydantic import BaseModel, field_validator
 
 AccountType = Literal["bank", "credit_card", "wallet"]
 
@@ -10,13 +10,13 @@ AccountType = Literal["bank", "credit_card", "wallet"]
 class AccountCreate(BaseModel):
     name: str
     type: AccountType
-    agency: Optional[str] = None
-    account: Optional[str] = None
-    card_number: Optional[str] = None
-    initial_balance: Optional[float] = None
-    available_limit: Optional[float] = None
-    closing_day: Optional[int] = None
-    due_day: Optional[int] = None
+    agency: str | None = None
+    account: str | None = None
+    card_number: str | None = None
+    initial_balance: float | None = None
+    available_limit: float | None = None
+    closing_day: int | None = None
+    due_day: int | None = None
     active: bool = True
 
     @field_validator("closing_day", "due_day")
@@ -28,16 +28,16 @@ class AccountCreate(BaseModel):
 
 
 class AccountUpdate(BaseModel):
-    name: Optional[str] = None
-    type: Optional[AccountType] = None
-    agency: Optional[str] = None
-    account: Optional[str] = None
-    card_number: Optional[str] = None
-    initial_balance: Optional[float] = None
-    available_limit: Optional[float] = None
-    closing_day: Optional[int] = None
-    due_day: Optional[int] = None
-    active: Optional[bool] = None
+    name: str | None = None
+    type: AccountType | None = None
+    agency: str | None = None
+    account: str | None = None
+    card_number: str | None = None
+    initial_balance: float | None = None
+    available_limit: float | None = None
+    closing_day: int | None = None
+    due_day: int | None = None
+    active: bool | None = None
 
     @field_validator("closing_day", "due_day")
     @classmethod
@@ -51,13 +51,13 @@ class AccountOut(BaseModel):
     id: UUID
     name: str
     type: AccountType
-    agency: Optional[str] = None
-    account: Optional[str] = None
-    card_number: Optional[str] = None
-    initial_balance: Optional[float] = None
-    available_limit: Optional[float] = None
-    closing_day: Optional[int] = None
-    due_day: Optional[int] = None
+    agency: str | None = None
+    account: str | None = None
+    card_number: str | None = None
+    initial_balance: float | None = None
+    available_limit: float | None = None
+    closing_day: int | None = None
+    due_day: int | None = None
     created_at: datetime
     updated_at: datetime
     active: bool

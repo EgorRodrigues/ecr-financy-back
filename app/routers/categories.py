@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.categories import CategoryCreate, CategoryUpdate, CategoryOut
+
 from app.dependencies import get_db
+from app.models.categories import CategoryCreate, CategoryOut, CategoryUpdate
 from app.repositories.categories import (
     create_category,
-    list_categories,
-    get_category,
-    update_category,
     delete_category,
+    get_category,
+    list_categories,
+    update_category,
 )
-
 
 router = APIRouter()
 

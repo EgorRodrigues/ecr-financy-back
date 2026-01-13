@@ -1,13 +1,15 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
-from app.models.contacts import ContactCreate, ContactUpdate, ContactOut
+
+from sqlalchemy import delete, insert, select, update
+
 from app.db.postgres import contacts
+from app.models.contacts import ContactCreate, ContactOut, ContactUpdate
 
 
 def create_contact(session, data: ContactCreate) -> ContactOut:
     cid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(contacts).values(
             id=cid,
@@ -132,7 +134,7 @@ def update_contact(session, cid: UUID, data: ContactUpdate) -> ContactOut | None
     new_address = data.address if data.address is not None else current.address
     new_notes = data.notes if data.notes is not None else current.notes
     new_active = data.active if data.active is not None else current.active
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(contacts)
         .where(contacts.c.id == cid)

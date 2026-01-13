@@ -1,15 +1,18 @@
-from uuid import UUID, uuid4
-from sqlalchemy.orm import Session
-from sqlalchemy import select, insert, update, delete, func
-from app.db.postgres import credit_card_invoices, accounts, expenses
-from app.models.credit_card_invoices import (
-    CreditCardInvoiceCreate,
-    CreditCardInvoiceUpdate,
-    CreditCardInvoiceOut,
-)
+import calendar
 from datetime import date, timedelta
 from decimal import Decimal
-import calendar
+from typing import Any
+from uuid import UUID, uuid4
+
+from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy.orm import Session
+
+from app.db.postgres import accounts, credit_card_invoices, expenses
+from app.models.credit_card_invoices import (
+    CreditCardInvoiceCreate,
+    CreditCardInvoiceOut,
+    CreditCardInvoiceUpdate,
+)
 
 
 def calculate_invoice_period(transaction_date: date, closing_day: int, due_day: int):
@@ -240,7 +243,7 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
     if not current:
         return None
 
-    values = {}
+    values: dict[str, Any] = {}
     if payload.amount is not None:
         values["amount"] = payload.amount
     if payload.status is not None:

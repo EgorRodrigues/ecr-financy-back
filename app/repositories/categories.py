@@ -1,13 +1,15 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
-from app.models.categories import CategoryCreate, CategoryUpdate, CategoryOut
+
+from sqlalchemy import delete, insert, select, update
+
 from app.db.postgres import categories
+from app.models.categories import CategoryCreate, CategoryOut, CategoryUpdate
 
 
 def create_category(session, data: CategoryCreate) -> CategoryOut:
     cid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(categories).values(
             id=cid,
@@ -83,7 +85,7 @@ def update_category(session, cid: UUID, data: CategoryUpdate) -> CategoryOut | N
     new_name = data.name if data.name is not None else current.name
     new_desc = data.description if data.description is not None else current.description
     new_active = data.active if data.active is not None else current.active
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(categories)
         .where(categories.c.id == cid)

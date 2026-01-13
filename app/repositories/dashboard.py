@@ -1,8 +1,10 @@
+from datetime import date, datetime
 from decimal import Decimal
-from datetime import datetime, date
+
 from sqlalchemy import select
-from app.models.dashboard import DashboardOut, BigNumbers, MonthlyItem, RecentTransaction
-from app.db.postgres import incomes, expenses
+
+from app.db.postgres import expenses, incomes
+from app.models.dashboard import BigNumbers, DashboardOut, MonthlyItem, RecentTransaction
 
 
 def _to_date(value):
@@ -93,7 +95,7 @@ def _process_incomes(rows, stats, monthly_map, recent_items):
             monthly_map[ms] = mm
         mm["inflows"] += _dec_to_float(getattr(row, "amount", None))
         rt = RecentTransaction(
-            id=str(getattr(row, "id")),
+            id=str(row.id),
             date=_to_date(getattr(row, "created_at", datetime.utcnow())).isoformat(),
             description=getattr(row, "description", "") or "",
             amount=_dec_to_float(getattr(row, "amount", None)),
@@ -127,7 +129,7 @@ def _process_expenses(rows, stats, monthly_map, recent_items):
             monthly_map[ms] = mm
         mm["outflows"] += _dec_to_float(getattr(row, "amount", None))
         rt = RecentTransaction(
-            id=str(getattr(row, "id")),
+            id=str(row.id),
             date=_to_date(getattr(row, "created_at", datetime.utcnow())).isoformat(),
             description=getattr(row, "description", "") or "",
             amount=_dec_to_float(getattr(row, "amount", None)),

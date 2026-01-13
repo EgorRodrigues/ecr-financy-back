@@ -1,8 +1,10 @@
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import select, func, and_, union_all
+
+from sqlalchemy import and_, func, select, union_all
 from sqlalchemy.orm import Session
-from app.db.postgres import expenses, categories, credit_card_transactions
+
+from app.db.postgres import categories, credit_card_transactions, expenses
 from app.models.reports import ExpenseByCategory
 
 
@@ -36,33 +38,29 @@ def get_expenses_by_category(
         .group_by(expenses.c.category_id)
     )
 
-    stmt_cc = (
-        select(
-            credit_card_transactions.c.category_id,
-            func.sum(credit_card_transactions.c.amount).label("amount"),
-        )
-        .group_by(credit_card_transactions.c.category_id)
-    )
+    stmt_cc = select(
+        credit_card_transactions.c.category_id,
+        func.sum(credit_card_transactions.c.amount).label("amount"),
+    ).group_by(credit_card_transactions.c.category_id)
     if conditions_cc:
         stmt_cc = stmt_cc.where(and_(*conditions_cc))
 
     # Combine both queries
     union_query = union_all(stmt_expenses, stmt_cc).subquery()
 
-    final_stmt = (
-        select(
-            union_query.c.category_id,
-            func.sum(union_query.c.amount).label("total_amount"),
-        )
-        .group_by(union_query.c.category_id)
-    )
+    final_stmt = select(
+        union_query.c.category_id,
+        func.sum(union_query.c.amount).label("total_amount"),
+    ).group_by(union_query.c.category_id)
 
     rows = session.execute(final_stmt).all()
 
     results: list[ExpenseByCategory] = []
     for row in rows:
         cid = row.category_id if row.category_id is not None else ""
-        total = float(row.total_amount if isinstance(row.total_amount, Decimal) else row.total_amount or 0)
+        total = float(
+            row.total_amount if isinstance(row.total_amount, Decimal) else row.total_amount or 0
+        )
         results.append(
             ExpenseByCategory(
                 category_id=str(cid),

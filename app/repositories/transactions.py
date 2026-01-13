@@ -1,7 +1,9 @@
 from uuid import UUID, uuid4
-from sqlalchemy import select, insert
-from app.models.transactions import TransactionCreate, TransactionOut
+
+from sqlalchemy import insert, select
+
 from app.db.postgres import transactions
+from app.models.transactions import TransactionCreate, TransactionOut
 
 
 def create_transaction(session, data: TransactionCreate) -> TransactionOut:

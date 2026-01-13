@@ -1,25 +1,25 @@
-from typing import Optional
-from pydantic import BaseModel
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class CategoryCreate(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     active: bool = True
 
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    active: bool | None = None
 
 
 class CategoryOut(BaseModel):
     id: UUID
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     created_at: datetime
     updated_at: datetime
     active: bool

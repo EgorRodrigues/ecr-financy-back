@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.dependencies import get_db
-from app.models.expenses import ExpenseCreate, ExpenseUpdate, ExpenseOut
+from app.models.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
 from app.repositories.expenses import (
     create_expense,
-    list_expenses,
-    get_expense,
-    update_expense,
     delete_expense,
+    get_expense,
+    list_expenses,
+    update_expense,
 )
-
 
 router = APIRouter()
 
@@ -26,7 +27,7 @@ def list_(
     account: str | None = None,
     account_type: str | None = None,
     status: str | None = None,
-    session: Session = Depends(get_db)
+    session: Session = Depends(get_db),
 ):
     return list_expenses(session, limit, account, account_type, status)
 

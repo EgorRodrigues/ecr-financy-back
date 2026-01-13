@@ -1,18 +1,20 @@
-from fastapi import APIRouter, HTTPException, Response, status, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
+
 from app.dependencies import get_db
 from app.models.credit_card_invoices import (
     CreditCardInvoiceCreate,
-    CreditCardInvoiceUpdate,
     CreditCardInvoiceOut,
+    CreditCardInvoiceUpdate,
 )
 from app.repositories.credit_card_invoices import (
-    list_invoices,
-    get_invoice,
     create_invoice,
-    update_invoice,
     delete_invoice,
+    get_invoice,
+    list_invoices,
+    update_invoice,
 )
 
 router = APIRouter()
@@ -23,7 +25,7 @@ def list_(
     limit: int = 50,
     account_id: UUID | None = None,
     status: str | None = None,
-    session: Session = Depends(get_db)
+    session: Session = Depends(get_db),
 ):
     return list_invoices(session, account_id, status, limit)
 
@@ -36,7 +38,7 @@ def create(payload: CreditCardInvoiceCreate, session: Session = Depends(get_db))
         return invoice
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/{invoice_id}", response_model=CreditCardInvoiceOut)
@@ -57,7 +59,7 @@ def update(invoice_id: UUID, payload: CreditCardInvoiceUpdate, session: Session 
         return item
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -70,4 +72,4 @@ def delete(invoice_id: UUID, session: Session = Depends(get_db)):
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except Exception as e:
         session.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

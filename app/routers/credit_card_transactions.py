@@ -1,22 +1,23 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.dependencies import get_db
 from app.models.credit_card_transactions import (
-    CreditCardTransactionCreate,
-    CreditCardTransactionUpdate,
-    CreditCardTransactionOut,
     CreditCardSummary,
+    CreditCardTransactionCreate,
+    CreditCardTransactionOut,
+    CreditCardTransactionUpdate,
 )
 from app.repositories.credit_card_transactions import (
     create_credit_card_transaction,
-    list_credit_card_transactions,
-    get_credit_card_transaction,
-    update_credit_card_transaction,
     delete_credit_card_transaction,
     get_credit_card_summary,
+    get_credit_card_transaction,
+    list_credit_card_transactions,
+    update_credit_card_transaction,
 )
-
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ def list_(
     limit: int = 50,
     account: str | None = None,
     account_type: str | None = None,
-    session: Session = Depends(get_db)
+    session: Session = Depends(get_db),
 ):
     return list_credit_card_transactions(session, limit, account, account_type)
 
@@ -53,7 +54,9 @@ def get(transaction_id: UUID, session: Session = Depends(get_db)):
 
 
 @router.put("/{transaction_id}", response_model=CreditCardTransactionOut)
-def update(transaction_id: UUID, payload: CreditCardTransactionUpdate, session: Session = Depends(get_db)):
+def update(
+    transaction_id: UUID, payload: CreditCardTransactionUpdate, session: Session = Depends(get_db)
+):
     item = update_credit_card_transaction(session, transaction_id, payload)
     if not item:
         raise HTTPException(status_code=404, detail="Credit Card Transaction not found")

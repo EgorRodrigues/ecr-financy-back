@@ -1,9 +1,11 @@
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete, func, Text
-from app.models.expenses import ExpenseCreate, ExpenseUpdate, ExpenseOut
-from app.db.postgres import expenses, accounts
+from uuid import UUID, uuid4
+
+from sqlalchemy import Text, delete, func, insert, select, update
+
+from app.db.postgres import accounts, expenses
+from app.models.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
 
 
 def _to_date(value):
@@ -12,7 +14,7 @@ def _to_date(value):
 
 def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
     eid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(expenses).values(
             id=eid,
@@ -259,7 +261,7 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
     new_fine = data.fine if data.fine is not None else current.fine
     new_discount = data.discount if data.discount is not None else current.discount
     new_total_paid = data.total_paid if data.total_paid is not None else current.total_paid
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(expenses)
         .where(expenses.c.id == eid)

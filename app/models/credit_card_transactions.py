@@ -1,99 +1,98 @@
-from typing import Optional, Literal, List
-from decimal import Decimal
 from datetime import date, datetime
-from pydantic import BaseModel, field_serializer
+from decimal import Decimal
+from typing import Literal, TypeAlias
 from uuid import UUID
 
+from pydantic import BaseModel, field_serializer
+
 from app.models.credit_card_invoices import CreditCardInvoiceOut
+
+PaymentMethod: TypeAlias = Literal[
+    "pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"
+]
 
 
 class CreditCardTransactionCreate(BaseModel):
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"] = "pago"
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = "credit_card"
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = "credit_card"
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
     active: bool = True
 
 
 class CreditCardTransactionUpdate(BaseModel):
-    amount: Optional[Decimal] = None
-    status: Optional[Literal["pendente", "pago", "cancelado"]] = "pago"
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = "credit_card"
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
-    active: Optional[bool] = None
+    amount: Decimal | None = None
+    status: Literal["pendente", "pago", "cancelado"] | None = "pago"
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = "credit_card"
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
+    active: bool | None = None
 
 
 class CreditCardTransactionOut(BaseModel):
     id: UUID
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = None
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = None
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
     active: bool
-    invoice_id: Optional[UUID] = None
+    invoice_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -107,9 +106,9 @@ class CreditCardTransactionOut(BaseModel):
 class CreditCardSummary(BaseModel):
     total_limit: Decimal
     available_limit: Decimal
-    transactions: List[CreditCardTransactionOut]
-    current_invoice: Optional[CreditCardInvoiceOut] = None
-    next_invoices: List[CreditCardInvoiceOut] = []
+    transactions: list[CreditCardTransactionOut]
+    current_invoice: CreditCardInvoiceOut | None = None
+    next_invoices: list[CreditCardInvoiceOut] = []
 
     @field_serializer("total_limit", "available_limit")
     def _ser_limits(self, v: Decimal):

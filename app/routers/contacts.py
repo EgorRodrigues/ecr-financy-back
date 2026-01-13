@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.contacts import ContactCreate, ContactUpdate, ContactOut
+
 from app.dependencies import get_db
+from app.models.contacts import ContactCreate, ContactOut, ContactUpdate
 from app.repositories.contacts import (
     create_contact,
-    list_contacts,
-    get_contact,
-    update_contact,
     delete_contact,
+    get_contact,
+    list_contacts,
+    update_contact,
 )
-
 
 router = APIRouter()
 

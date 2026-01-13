@@ -8,6 +8,7 @@ class ExpenseByCategoryAndAccount(BaseModel):
     account_name: str
     total_amount: float
 
+
 class IncomeByCustomer(BaseModel):
     contact_id: str
     contact_name: str

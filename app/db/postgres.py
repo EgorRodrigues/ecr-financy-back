@@ -1,25 +1,27 @@
+from urllib.parse import quote_plus
+from uuid import uuid4
+
 from sqlalchemy import (
-    create_engine,
-    MetaData,
-    Table,
-    Column,
-    Text,
+    BigInteger,
     Boolean,
+    Column,
     Date,
     DateTime,
-    Numeric,
-    BigInteger,
     Integer,
-    func,
-    text,
+    MetaData,
+    Numeric,
+    Table,
+    Text,
     UniqueConstraint,
     Uuid,
+    create_engine,
+    func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
-from sqlalchemy.types import TypeDecorator, JSON
 from sqlalchemy.orm import sessionmaker
-from uuid import uuid4
-from urllib.parse import quote_plus
+from sqlalchemy.types import JSON, TypeDecorator
+
 from app.core.config import settings
 
 
@@ -75,25 +77,29 @@ def ensure_tenant_schema(schema_name: str):
     Ensures that the tenant schema exists and all tables are created within it.
     """
     engine = get_engine()
-    
+
     with engine.connect() as connection:
         # Check if schema exists
         schema_exists = connection.execute(
-            text(f"SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{schema_name}'")
+            text(
+                "SELECT schema_name FROM information_schema.schemata "
+                f"WHERE schema_name = '{schema_name}'"
+            )
         ).scalar()
 
         if not schema_exists:
             # Create schema
             connection.execute(text(f"CREATE SCHEMA {schema_name}"))
             connection.commit()
-            
+
             # Create tables in the new schema
             # We need to reflect the metadata to the new schema or just create all
-            # Since metadata is bound to 'public' by default (None), we can try passing schema to create_all
-            # but create_all usually uses the schema defined in Table args.
-            # However, if we change search_path, create_all might work if we don't specify schema in Table.
+            # Since metadata is bound to 'public' by default (None), we can try passing
+            # schema to create_all but create_all usually uses the schema defined in Table args.
+            # However, if we change search_path, create_all might work if we don't specify
+            # schema in Table.
             # Our Tables don't have schema specified, so they default to default schema.
-            
+
             # Set search path for this connection to create tables
             connection.execute(text(f"SET search_path TO {schema_name}"))
             metadata.create_all(connection)
@@ -104,6 +110,7 @@ def connect_postgres(settings_obj):
     # Backward compatibility if needed, or just initialize engine
     get_engine()
     return sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+
 
 categories = Table(
     "categories",

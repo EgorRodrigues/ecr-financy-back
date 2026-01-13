@@ -5,14 +5,16 @@ Revises: 7be519642bb1
 Create Date: 2025-12-27 15:30:06.434312
 """
 
-from typing import Sequence, Union
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 
+from alembic import op
+
 revision: str = "af07ab63cb02"
-down_revision: Union[str, None] = "7be519642bb1"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "7be519642bb1"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

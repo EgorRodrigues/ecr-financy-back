@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.models.accounts import AccountCreate, AccountUpdate, AccountOut
+
 from app.dependencies import get_db
+from app.models.accounts import AccountCreate, AccountOut, AccountUpdate
 from app.repositories.accounts import (
     create_account,
-    list_accounts,
-    get_account,
-    update_account,
     delete_account,
+    get_account,
+    list_accounts,
+    update_account,
 )
-
 
 router = APIRouter()
 
@@ -22,10 +23,10 @@ def create(payload: AccountCreate, session: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[AccountOut])
 def list_(
-    limit: int = 50, 
-    account: str | None = None, 
+    limit: int = 50,
+    account: str | None = None,
     account_type: str | None = None,
-    session: Session = Depends(get_db)
+    session: Session = Depends(get_db),
 ):
     return list_accounts(session, limit, account, account_type)
 

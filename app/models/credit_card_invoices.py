@@ -1,8 +1,9 @@
-from typing import Optional, Literal
-from decimal import Decimal
 from datetime import date, datetime
-from pydantic import BaseModel, field_serializer
+from decimal import Decimal
+from typing import Literal
 from uuid import UUID
+
+from pydantic import BaseModel, field_serializer
 
 
 class CreditCardInvoiceCreate(BaseModel):
@@ -15,9 +16,9 @@ class CreditCardInvoiceCreate(BaseModel):
 
 
 class CreditCardInvoiceUpdate(BaseModel):
-    amount: Optional[Decimal] = None
-    status: Optional[Literal["open", "closed", "paid"]] = None
-    due_date: Optional[date] = None
+    amount: Decimal | None = None
+    status: Literal["open", "closed", "paid"] | None = None
+    due_date: date | None = None
 
 
 class CreditCardInvoiceOut(BaseModel):
@@ -28,7 +29,7 @@ class CreditCardInvoiceOut(BaseModel):
     due_date: date
     amount: Decimal
     status: Literal["open", "closed", "paid"]
-    expense_id: Optional[UUID] = None
+    expense_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

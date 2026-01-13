@@ -1,13 +1,15 @@
 from uuid import uuid4
-from sqlalchemy import select, insert, update, func
+
+from sqlalchemy import func, insert, select, update
+
 from app.core.config import settings
 from app.db.postgres import (
-    connect_postgres,
+    accounts,
     close_postgres,
+    connect_postgres,
     credit_card_invoices,
     credit_card_transactions,
     expenses,
-    accounts,
 )
 
 
@@ -40,7 +42,8 @@ def main() -> None:
 
             if calculated_amount != invoice.amount:
                 print(
-                    f"Correcting invoice {invoice.id} amount from {invoice.amount} to {calculated_amount}"
+                    f"Correcting invoice {invoice.id} amount from {invoice.amount} "
+                    f"to {calculated_amount}"
                 )
                 session.execute(
                     update(credit_card_invoices)
@@ -65,7 +68,8 @@ def main() -> None:
                     and existing_linked_expense_amount != current_invoice_amount
                 ):
                     print(
-                        f"Updating linked expense {invoice.expense_id} amount from {existing_linked_expense_amount} to {current_invoice_amount}"
+                        f"Updating linked expense {invoice.expense_id} amount from "
+                        f"{existing_linked_expense_amount} to {current_invoice_amount}"
                     )
                     session.execute(
                         update(expenses)
@@ -129,7 +133,10 @@ def main() -> None:
 
         session.commit()
         print(
-            f"Sync complete. Created {synced_count} expenses. Linked {linked_existing_count} existing. Skipped {skipped_count} already linked. Corrected Amounts: {corrected_amount_count}"
+            f"Sync complete. Created {synced_count} expenses. "
+            f"Linked {linked_existing_count} existing. "
+            f"Skipped {skipped_count} already linked. "
+            f"Corrected Amounts: {corrected_amount_count}"
         )
 
     except Exception as e:

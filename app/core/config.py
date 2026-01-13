@@ -1,16 +1,15 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", env_prefix="APP_")
 
-    postgres_host: Optional[str] = "127.0.0.1"
-    postgres_port: Optional[int] = 5432
-    postgres_database: Optional[str] = "ecr_financy"
-    postgres_username: Optional[str] = "postgres"
-    postgres_password: Optional[str] = "postgres"
-    
+    postgres_host: str | None = "127.0.0.1"
+    postgres_port: int | None = 5432
+    postgres_database: str | None = "ecr_financy"
+    postgres_username: str | None = "postgres"
+    postgres_password: str | None = "postgres"
+
     jwt_secret_key: str = "seu-segredo-super-seguro"
     jwt_algorithm: str = "HS256"
 

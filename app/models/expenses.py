@@ -1,95 +1,94 @@
-from typing import Optional, Literal, List
-from decimal import Decimal
 from datetime import date, datetime
-from pydantic import BaseModel, field_serializer
+from decimal import Decimal
+from typing import Literal, TypeAlias
 from uuid import UUID
+
+from pydantic import BaseModel, field_serializer
+
+PaymentMethod: TypeAlias = Literal[
+    "pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"
+]
 
 
 class ExpenseCreate(BaseModel):
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = None
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = None
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
     active: bool = True
 
 
 class ExpenseUpdate(BaseModel):
-    amount: Optional[Decimal] = None
-    status: Optional[Literal["pendente", "pago", "cancelado"]] = None
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = None
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
-    active: Optional[bool] = None
+    amount: Decimal | None = None
+    status: Literal["pendente", "pago", "cancelado"] | None = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = None
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
+    active: bool | None = None
 
 
 class ExpenseOut(BaseModel):
     id: UUID
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
-    issue_date: Optional[date] = None
-    due_date: Optional[date] = None
-    payment_date: Optional[date] = None
-    original_amount: Optional[Decimal] = None
-    interest: Optional[Decimal] = None
-    fine: Optional[Decimal] = None
-    discount: Optional[Decimal] = None
-    total_paid: Optional[Decimal] = None
-    category_id: Optional[str] = None
-    subcategory_id: Optional[str] = None
-    cost_center_id: Optional[str] = None
-    contact_id: Optional[str] = None
-    description: Optional[str] = None
-    document: Optional[str] = None
-    payment_method: Optional[
-        Literal["pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"]
-    ] = None
-    account: Optional[str] = None
-    recurrence: Optional[bool] = None
-    competence: Optional[str] = None
-    project: Optional[str] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    payment_date: date | None = None
+    original_amount: Decimal | None = None
+    interest: Decimal | None = None
+    fine: Decimal | None = None
+    discount: Decimal | None = None
+    total_paid: Decimal | None = None
+    category_id: str | None = None
+    subcategory_id: str | None = None
+    cost_center_id: str | None = None
+    contact_id: str | None = None
+    description: str | None = None
+    document: str | None = None
+    payment_method: PaymentMethod | None = None
+    account: str | None = None
+    recurrence: bool | None = None
+    competence: str | None = None
+    project: str | None = None
+    tags: list[str] | None = None
+    notes: str | None = None
     active: bool
     created_at: datetime
     updated_at: datetime

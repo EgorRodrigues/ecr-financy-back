@@ -1,18 +1,18 @@
-from typing import Optional
-from pydantic import BaseModel
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class TransactionCreate(BaseModel):
     amount: int
-    description: Optional[str] = None
+    description: str | None = None
     active: bool = True
 
 
 class TransactionOut(BaseModel):
     id: UUID
     amount: int
-    description: Optional[str] = None
+    description: str | None = None
     created_at: datetime
     active: bool

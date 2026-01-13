@@ -1,18 +1,20 @@
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete
+
+from sqlalchemy import delete, insert, select, update
+
+from app.db.postgres import subcategories
 from app.models.subcategories import (
     SubcategoryCreate,
-    SubcategoryUpdate,
-    SubcategoryOut,
     SubcategoryMove,
+    SubcategoryOut,
+    SubcategoryUpdate,
 )
-from app.db.postgres import subcategories
 
 
 def create_subcategory(session, data: SubcategoryCreate) -> SubcategoryOut:
     sid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(subcategories).values(
             id=sid,
@@ -124,7 +126,7 @@ def update_subcategory(
     new_name = data.name if data.name is not None else current.name
     new_desc = data.description if data.description is not None else current.description
     new_active = data.active if data.active is not None else current.active
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(subcategories)
         .where((subcategories.c.category_id == category_id) & (subcategories.c.id == sid))
@@ -158,7 +160,7 @@ def move_subcategory(
     current = get_subcategory(session, from_category_id, sid)
     if not current:
         return None
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(subcategories)
         .where(subcategories.c.id == sid)

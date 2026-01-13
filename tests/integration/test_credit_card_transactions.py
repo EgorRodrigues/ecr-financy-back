@@ -1,5 +1,6 @@
-from fastapi.testclient import TestClient
 from datetime import date
+
+from fastapi.testclient import TestClient
 
 
 def test_create_cc_transaction(client: TestClient):

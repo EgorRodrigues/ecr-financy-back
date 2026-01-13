@@ -1,8 +1,10 @@
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import select, func, and_
+
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
-from app.db.postgres import expenses, categories, accounts
+
+from app.db.postgres import accounts, categories, expenses
 from app.models.reporting import ExpenseByCategoryAndAccount
 
 
@@ -49,7 +51,9 @@ def get_expenses_by_category_account(
             account_id = ""
             account_name = raw_acc or "Sem Conta"
 
-        total = float(row.total_amount if isinstance(row.total_amount, Decimal) else row.total_amount or 0)
+        total = float(
+            row.total_amount if isinstance(row.total_amount, Decimal) else row.total_amount or 0
+        )
         results.append(
             ExpenseByCategoryAndAccount(
                 category_id=str(cid),
@@ -61,4 +65,3 @@ def get_expenses_by_category_account(
         )
 
     return results
-

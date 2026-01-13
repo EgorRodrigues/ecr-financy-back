@@ -1,18 +1,20 @@
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete, func, Text
+from uuid import UUID, uuid4
+
+from sqlalchemy import Text, delete, func, insert, select, update
+
+from app.db.postgres import accounts, credit_card_transactions
 from app.models.credit_card_transactions import (
-    CreditCardTransactionCreate,
-    CreditCardTransactionUpdate,
-    CreditCardTransactionOut,
     CreditCardSummary,
+    CreditCardTransactionCreate,
+    CreditCardTransactionOut,
+    CreditCardTransactionUpdate,
 )
-from app.db.postgres import credit_card_transactions, accounts
 from app.repositories.credit_card_invoices import (
     ensure_invoice_for_transaction,
-    update_invoice_amount,
     get_account_invoices_summary,
+    update_invoice_amount,
 )
 
 
@@ -122,7 +124,7 @@ def create_credit_card_transaction(
     session, data: CreditCardTransactionCreate
 ) -> CreditCardTransactionOut:
     eid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Invoice Logic
     invoice_id = None
@@ -382,7 +384,7 @@ def update_credit_card_transaction(
     ):
         recalc_invoice = True
 
-    if recalc_invoice and new_account:
+    if recalc_invoice and new_account and new_issue_date is not None:
         try:
             account_uuid = UUID(str(new_account))
             new_invoice = ensure_invoice_for_transaction(session, account_uuid, new_issue_date)
@@ -446,7 +448,7 @@ def update_credit_card_transaction(
     new_fine = data.fine if data.fine is not None else current.fine
     new_discount = data.discount if data.discount is not None else current.discount
     new_total_paid = data.total_paid if data.total_paid is not None else current.total_paid
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     session.execute(
         update(credit_card_transactions)

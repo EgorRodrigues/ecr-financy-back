@@ -1,10 +1,13 @@
-from typing import Generator
-from fastapi import HTTPException, status, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from collections.abc import Generator
+
 import jwt
+from fastapi import HTTPException, Request, status
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
-from app.db.postgres import get_engine, ensure_tenant_schema, sessionmaker
+from app.db.postgres import ensure_tenant_schema, get_engine, sessionmaker
+
 
 def get_db(request: Request) -> Generator[Session, None, None]:
     app_state = getattr(request.app, "state", None)
@@ -24,18 +27,18 @@ def get_db(request: Request) -> Generator[Session, None, None]:
     token = auth.split(" ", 1)[1]
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-    except jwt.ExpiredSignatureError:
+    except jwt.ExpiredSignatureError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expired",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-    except jwt.InvalidTokenError:
+        ) from e
+    except jwt.InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(

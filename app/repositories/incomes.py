@@ -1,9 +1,11 @@
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from decimal import Decimal
-from datetime import datetime, timezone
-from sqlalchemy import select, insert, update, delete, func, Text
-from app.models.incomes import IncomeCreate, IncomeUpdate, IncomeOut
-from app.db.postgres import incomes, accounts
+from uuid import UUID, uuid4
+
+from sqlalchemy import Text, delete, func, insert, select, update
+
+from app.db.postgres import accounts, incomes
+from app.models.incomes import IncomeCreate, IncomeOut, IncomeUpdate
 
 
 def _to_date(value):
@@ -12,7 +14,7 @@ def _to_date(value):
 
 def create_income(session, data: IncomeCreate) -> IncomeOut:
     iid = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         insert(incomes).values(
             id=iid,
@@ -261,7 +263,7 @@ def update_income(session, iid: UUID, data: IncomeUpdate) -> IncomeOut | None:
     new_total_received = (
         data.total_received if data.total_received is not None else current.total_received
     )
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         update(incomes)
         .where(incomes.c.id == iid)

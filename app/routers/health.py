@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from sqlalchemy.orm import sessionmaker
-from app.db.postgres import ping, get_engine
 
+from app.db.postgres import get_engine, ping
 
 router = APIRouter()
 

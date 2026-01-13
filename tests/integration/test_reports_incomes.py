@@ -1,11 +1,13 @@
 from datetime import date
-from uuid import uuid4
 from decimal import Decimal
-from sqlalchemy import insert
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
-from app.main import app
+from sqlalchemy import insert
+
 from app.core.security import verify_token
 from app.db.postgres import contacts, incomes
+from app.main import app
 
 
 def ensure_auth_override():
@@ -47,4 +49,3 @@ def test_incomes_by_customer_with_data(session, client: TestClient):
     assert item is not None
     assert item["contact_name"] == "Cliente Teste"
     assert item["total_amount"] == 250.0
-
