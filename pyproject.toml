@@ -67,3 +67,4 @@ clean = 'rm -rf htmlcov .coverage database.db .*_cache && find . -type d -name "
 makemigrations = 'alembic revision --autogenerate -m'
 migrate = 'alembic upgrade head'
 sync-cc = 'python -m app.scripts.sync_invoices_to_expenses'
+migrate-tenant-invoices-payment-fields = 'python -m app.scripts.migrate_tenant_credit_card_invoices_payment_fields'

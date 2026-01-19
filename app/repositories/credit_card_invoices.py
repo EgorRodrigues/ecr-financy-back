@@ -124,6 +124,11 @@ def get_invoice_by_period(session: Session, account_id: UUID, period_start: date
             due_date=result.due_date,
             amount=result.amount,
             status=result.status,
+            payment_date=result.payment_date,
+            interest=result.interest,
+            fine=result.fine,
+            discount=result.discount,
+            total_paid=result.total_paid,
             expense_id=result.expense_id,
             created_at=result.created_at,
             updated_at=result.updated_at,
@@ -144,8 +149,13 @@ def get_invoice(session: Session, invoice_id: UUID):
             period_end=result.period_end,
             due_date=result.due_date,
             amount=result.amount,
-            status=result.status,
-            expense_id=result.expense_id,
+        status=result.status,
+        payment_date=result.payment_date,
+        interest=result.interest,
+        fine=result.fine,
+        discount=result.discount,
+        total_paid=result.total_paid,
+        expense_id=result.expense_id,
             created_at=result.created_at,
             updated_at=result.updated_at,
         )
@@ -232,6 +242,11 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        payment_date=result.payment_date,
+        interest=result.interest,
+        fine=result.fine,
+        discount=result.discount,
+        total_paid=result.total_paid,
         expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at,
@@ -250,6 +265,16 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
         values["status"] = payload.status
     if payload.due_date is not None:
         values["due_date"] = payload.due_date
+    if payload.payment_date is not None:
+        values["payment_date"] = payload.payment_date
+    if payload.interest is not None:
+        values["interest"] = payload.interest
+    if payload.fine is not None:
+        values["fine"] = payload.fine
+    if payload.discount is not None:
+        values["discount"] = payload.discount
+    if payload.total_paid is not None:
+        values["total_paid"] = payload.total_paid
 
     if not values:
         return current
@@ -273,6 +298,16 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
         expense_values["status"] = "pago" if result.status == "paid" else "pendente"
     if payload.due_date is not None:
         expense_values["due_date"] = result.due_date
+    if payload.payment_date is not None:
+        expense_values["payment_date"] = result.payment_date
+    if payload.interest is not None:
+        expense_values["interest"] = result.interest
+    if payload.fine is not None:
+        expense_values["fine"] = result.fine
+    if payload.discount is not None:
+        expense_values["discount"] = result.discount
+    if payload.total_paid is not None:
+        expense_values["total_paid"] = result.total_paid
 
     if expense_values and current.expense_id:
         expense_values["updated_at"] = func.now()
@@ -288,6 +323,11 @@ def update_invoice(session: Session, invoice_id: UUID, payload: CreditCardInvoic
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        payment_date=result.payment_date,
+        interest=result.interest,
+        fine=result.fine,
+        discount=result.discount,
+        total_paid=result.total_paid,
         expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at,
@@ -320,6 +360,11 @@ def update_invoice_amount(session: Session, invoice_id: UUID, amount_delta: Deci
         due_date=result.due_date,
         amount=result.amount,
         status=result.status,
+        payment_date=result.payment_date,
+        interest=result.interest,
+        fine=result.fine,
+        discount=result.discount,
+        total_paid=result.total_paid,
         expense_id=result.expense_id,
         created_at=result.created_at,
         updated_at=result.updated_at,

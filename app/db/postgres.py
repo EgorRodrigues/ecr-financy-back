@@ -267,6 +267,11 @@ credit_card_invoices = Table(
     Column("due_date", Date, nullable=False),
     Column("amount", Numeric(18, 2), nullable=False, default=0),
     Column("status", Text, nullable=False, default="open"),  # open, closed, paid
+    Column("payment_date", Date, nullable=True),
+    Column("interest", Numeric(18, 2), nullable=True),
+    Column("fine", Numeric(18, 2), nullable=True),
+    Column("discount", Numeric(18, 2), nullable=True),
+    Column("total_paid", Numeric(18, 2), nullable=True),
     Column("expense_id", UUID(as_uuid=True), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),

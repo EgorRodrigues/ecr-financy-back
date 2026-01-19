@@ -2,6 +2,7 @@ from datetime import date
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import insert
 
 from app.db.postgres import accounts
@@ -64,3 +65,36 @@ def test_invoice_reuse(session, test_account):
 
     assert invoice1.id == invoice2.id
     assert invoice1.due_date == date(2026, 1, 8)
+
+
+def test_credit_card_invoice_routes_accessible(client: TestClient):
+    acc_payload = {
+        "name": "HTTP Invoice Account",
+        "type": "credit_card",
+        "closing_day": 1,
+        "due_day": 8,
+        "available_limit": 1000.0,
+    }
+    acc_res = client.post("/accounts/", json=acc_payload)
+    assert acc_res.status_code == 200
+    account_id = acc_res.json()["id"]
+
+    invoice_payload = {
+        "account_id": account_id,
+        "period_start": "2025-12-02",
+        "period_end": "2026-01-01",
+        "due_date": "2026-01-08",
+        "amount": 100.0,
+        "status": "open",
+    }
+    res = client.post("/credit-card-invoices/", json=invoice_payload)
+    assert res.status_code == 201
+    invoice_id = res.json()["id"]
+
+    res = client.get(f"/credit-card-invoices/?account_id={account_id}")
+    assert res.status_code == 200
+    assert any(inv["id"] == invoice_id for inv in res.json())
+
+    res = client.get(f"/credit-card-invoices/{invoice_id}")
+    assert res.status_code == 200
+    assert res.json()["id"] == invoice_id

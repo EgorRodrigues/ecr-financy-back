@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import Text, delete, func, insert, select, update
 
-from app.db.postgres import accounts, expenses
+from app.db.postgres import accounts, credit_card_invoices, expenses
 from app.models.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
 
 
@@ -229,6 +229,13 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
     current = get_expense(session, eid)
     if not current:
         return None
+    linked_invoice = session.execute(
+        select(credit_card_invoices.c.id).where(credit_card_invoices.c.expense_id == eid)
+    ).first()
+    if linked_invoice:
+        raise ValueError(
+            "Expense vinculada a invoice de cartão de crédito não pode ser editada diretamente"
+        )
     new_amount = data.amount if data.amount is not None else current.amount
     new_status = data.status if data.status is not None else current.status
     new_issue_date = data.issue_date if data.issue_date is not None else current.issue_date
@@ -326,6 +333,13 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
 
 
 def delete_expense(session, eid: UUID) -> bool:
+    linked_invoice = session.execute(
+        select(credit_card_invoices.c.id).where(credit_card_invoices.c.expense_id == eid)
+    ).first()
+    if linked_invoice:
+        raise ValueError(
+            "Expense vinculada a invoice de cartão de crédito não pode ser deletada diretamente"
+        )
     session.execute(delete(expenses).where(expenses.c.id == eid))
     session.commit()
     return True

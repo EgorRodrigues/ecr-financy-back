@@ -42,13 +42,19 @@ def get(expense_id: UUID, session: Session = Depends(get_db)):
 
 @router.put("/{expense_id}", response_model=ExpenseOut)
 def update(expense_id: UUID, payload: ExpenseUpdate, session: Session = Depends(get_db)):
-    item = update_expense(session, expense_id, payload)
-    if not item:
-        raise HTTPException(status_code=404, detail="Expense not found")
-    return item
+    try:
+        item = update_expense(session, expense_id, payload)
+        if not item:
+            raise HTTPException(status_code=404, detail="Expense not found")
+        return item
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.delete("/{expense_id}")
 def delete(expense_id: UUID, session: Session = Depends(get_db)):
-    delete_expense(session, expense_id)
-    return {"deleted": True}
+    try:
+        delete_expense(session, expense_id)
+        return {"deleted": True}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e

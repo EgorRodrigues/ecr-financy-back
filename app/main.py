@@ -8,6 +8,7 @@ from app.routers.categories import router as categories_router
 from app.routers.contacts import router as contacts_router
 from app.routers.cost_centers import router as cost_centers_router
 from app.routers.credit_card_transactions import router as credit_card_transactions_router
+from app.routers.credit_card_invoices import router as credit_card_invoices_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.expenses import router as expenses_router
 from app.routers.financial_forecast import router as financial_forecast_router
@@ -53,6 +54,11 @@ app.include_router(
     credit_card_transactions_router,
     prefix="/credit-card-transactions",
     tags=["credit-card-transactions"],
+)
+app.include_router(
+    credit_card_invoices_router,
+    prefix="/credit-card-invoices",
+    tags=["credit-card-invoices"],
 )
 app.include_router(incomes_router, prefix="/incomes", tags=["incomes"])
 app.include_router(accounts_router, prefix="/accounts", tags=["accounts"])

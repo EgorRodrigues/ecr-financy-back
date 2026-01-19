@@ -7,12 +7,14 @@ from sqlalchemy import insert, select
 
 from app.db.postgres import accounts, credit_card_invoices, expenses
 from app.models.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
+from app.models.expenses import ExpenseUpdate
 from app.repositories.credit_card_invoices import (
     create_invoice,
     delete_invoice,
     update_invoice,
     update_invoice_amount,
 )
+from app.repositories.expenses import delete_expense, update_expense
 
 
 @pytest.fixture
@@ -109,6 +111,40 @@ def test_update_invoice_properties_syncs_expense(session, test_account):
     assert expense.due_date == date(2026, 1, 10)
 
 
+def test_update_invoice_payment_fields_syncs_expense(session, test_account):
+    invoice_data = CreditCardInvoiceCreate(
+        account_id=test_account,
+        period_start=date(2025, 12, 2),
+        period_end=date(2026, 1, 1),
+        due_date=date(2026, 1, 8),
+        amount=Decimal("100.00"),
+        status="open",
+    )
+    invoice = create_invoice(session, invoice_data)
+
+    payment_date = date(2026, 1, 9)
+    update_data = CreditCardInvoiceUpdate(
+        status="paid",
+        payment_date=payment_date,
+        interest=Decimal("10.00"),
+        fine=Decimal("5.00"),
+        discount=Decimal("3.00"),
+        total_paid=Decimal("112.00"),
+    )
+    update_invoice(session, invoice.id, update_data)
+
+    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
+    expense = session.execute(stmt).one_or_none()
+
+    assert expense is not None
+    assert expense.status == "pago"
+    assert expense.payment_date == payment_date
+    assert expense.interest == Decimal("10.00")
+    assert expense.fine == Decimal("5.00")
+    assert expense.discount == Decimal("3.00")
+    assert expense.total_paid == Decimal("112.00")
+
+
 def test_delete_invoice_syncs_expense(session, test_account):
     """
     Test that deleting an invoice deletes the corresponding expense.
@@ -138,3 +174,37 @@ def test_delete_invoice_syncs_expense(session, test_account):
     # Check Invoice Deleted
     stmt = select(credit_card_invoices).where(credit_card_invoices.c.id == invoice.id)
     assert session.execute(stmt).one_or_none() is None
+
+
+def test_cannot_update_linked_expense_directly(session, test_account):
+    invoice_data = CreditCardInvoiceCreate(
+        account_id=test_account,
+        period_start=date(2025, 12, 2),
+        period_end=date(2026, 1, 1),
+        due_date=date(2026, 1, 8),
+        amount=Decimal("100.00"),
+        status="open",
+    )
+    invoice = create_invoice(session, invoice_data)
+
+    with pytest.raises(ValueError):
+        update_expense(
+            session,
+            invoice.expense_id,
+            ExpenseUpdate(description="Should not update directly"),
+        )
+
+
+def test_cannot_delete_linked_expense_directly(session, test_account):
+    invoice_data = CreditCardInvoiceCreate(
+        account_id=test_account,
+        period_start=date(2025, 12, 2),
+        period_end=date(2026, 1, 1),
+        due_date=date(2026, 1, 8),
+        amount=Decimal("100.00"),
+        status="open",
+    )
+    invoice = create_invoice(session, invoice_data)
+
+    with pytest.raises(ValueError):
+        delete_expense(session, invoice.expense_id)
