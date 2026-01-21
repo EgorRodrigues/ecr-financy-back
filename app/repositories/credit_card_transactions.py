@@ -67,7 +67,6 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
         credit_card_transactions.c.updated_at,
     ).where(
         credit_card_transactions.c.account == str(account_id),
-        credit_card_transactions.c.status != "cancelado",
     )
 
     rows = session.execute(query).all()
@@ -106,7 +105,7 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
         for row in rows
     ]
 
-    total_spent = sum(t.amount for t in transactions_out)
+    total_spent = sum(t.amount for t in transactions_out if t.status != "cancelado")
     available_limit = total_limit - total_spent
 
     current_invoice, next_invoices = get_account_invoices_summary(session, account_id)
@@ -125,6 +124,13 @@ def create_credit_card_transaction(
 ) -> CreditCardTransactionOut:
     eid = uuid4()
     now = datetime.now(UTC)
+
+    # Normalize account to ensure consistency
+    if data.account:
+        try:
+            data.account = str(UUID(str(data.account)))
+        except ValueError:
+            pass  # Leave as is if not a valid UUID
 
     # Invoice Logic
     invoice_id = None
@@ -251,6 +257,8 @@ def list_credit_card_transactions(
         )
         query = query.where(accounts.c.type == account_type)
 
+    query = query.order_by(credit_card_transactions.c.created_at.desc())
+
     rows = session.execute(query.limit(limit)).all()
     return [
         CreditCardTransactionOut(
@@ -360,6 +368,13 @@ def update_credit_card_transaction(
     current = get_credit_card_transaction(session, eid)
     if not current:
         return None
+
+    # Normalize account in update data
+    if data.account:
+        try:
+            data.account = str(UUID(str(data.account)))
+        except ValueError:
+            pass
 
     new_amount = data.amount if data.amount is not None else current.amount
     new_status = data.status if data.status is not None else current.status

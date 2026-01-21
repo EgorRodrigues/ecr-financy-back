@@ -69,6 +69,8 @@ def list_accounts(
     if account_type:
         query = query.where(accounts.c.type == account_type)
 
+    query = query.order_by(accounts.c.name.asc())
+
     rows = session.execute(query.limit(limit)).all()
     return [
         AccountOut(
