@@ -22,7 +22,7 @@ def create(payload: CostCenterCreate, session: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[CostCenterOut])
-def list_(limit: int = 50, session: Session = Depends(get_db)):
+def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_cost_centers(session, limit)
 
 

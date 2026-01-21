@@ -31,7 +31,7 @@ def create_category(session, data: CategoryCreate) -> CategoryOut:
     )
 
 
-def list_categories(session, limit: int = 50) -> list[CategoryOut]:
+def list_categories(session, limit: int) -> list[CategoryOut]:
     rows = session.execute(
         select(
             categories.c.id,

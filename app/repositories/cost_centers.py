@@ -41,7 +41,7 @@ def create_cost_center(session: Session, data: CostCenterCreate) -> CostCenterOu
     )
 
 
-def list_cost_centers(session: Session, limit: int = 50) -> list[CostCenterOut]:
+def list_cost_centers(session: Session, limit: int) -> list[CostCenterOut]:
     stmt = select(cost_centers).limit(limit)
     result = session.execute(stmt).all()
 

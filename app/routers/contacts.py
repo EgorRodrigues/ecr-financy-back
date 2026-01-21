@@ -22,7 +22,7 @@ def create(payload: ContactCreate, session: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[ContactOut])
-def list_(limit: int = 50, session: Session = Depends(get_db)):
+def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_contacts(session, limit)
 
 

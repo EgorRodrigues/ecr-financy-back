@@ -45,7 +45,7 @@ def create_contact(session, data: ContactCreate) -> ContactOut:
     )
 
 
-def list_contacts(session, limit: int = 50) -> list[ContactOut]:
+def list_contacts(session, limit: int) -> list[ContactOut]:
     rows = session.execute(
         select(
             contacts.c.id,
