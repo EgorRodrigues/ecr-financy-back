@@ -35,7 +35,7 @@ def create_expense(session, data: ExpenseCreate) -> ExpenseOut:
             description=data.description,
             document=data.document,
             payment_method=data.payment_method,
-            account=data.account,
+            account=str(data.account) if data.account else None,
             recurrence=data.recurrence,
             competence=data.competence,
             project=data.project,
@@ -254,7 +254,7 @@ def update_expense(session, eid: UUID, data: ExpenseUpdate) -> ExpenseOut | None
     new_payment_method = (
         data.payment_method if data.payment_method is not None else current.payment_method
     )
-    new_account = data.account if data.account is not None else current.account
+    new_account = str(data.account) if data.account is not None else current.account
     new_recurrence = data.recurrence if data.recurrence is not None else current.recurrence
     new_competence = data.competence if data.competence is not None else current.competence
     new_project = data.project if data.project is not None else current.project

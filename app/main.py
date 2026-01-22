@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.accounts import router as accounts_router
+from app.routers.bank_statement import router as bank_statement_router
 from app.routers.categories import router as categories_router
 from app.routers.contacts import router as contacts_router
 from app.routers.cost_centers import router as cost_centers_router
@@ -62,6 +63,7 @@ app.include_router(
 )
 app.include_router(incomes_router, prefix="/incomes", tags=["incomes"])
 app.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
+app.include_router(bank_statement_router, prefix="/bank-statement", tags=["bank-statement"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(
     financial_forecast_router, prefix="/financial-forecast", tags=["financial-forecast"]
