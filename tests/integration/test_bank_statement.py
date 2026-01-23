@@ -16,6 +16,15 @@ def test_bank_statement_basic(client: TestClient):
     assert r_acc.status_code == 200
     account_id = r_acc.json()["id"]
 
+    # 1.5 Create Categories
+    cat_work = client.post("/categories/", json={"name": "Work", "active": True})
+    assert cat_work.status_code == 200
+    cat_work_id = cat_work.json()["id"]
+    
+    cat_food = client.post("/categories/", json={"name": "Food", "active": True})
+    assert cat_food.status_code == 200
+    cat_food_id = cat_food.json()["id"]
+
     # 2. Create Income (Received)
     today = date.today().isoformat()
     inc_payload = {
@@ -25,6 +34,7 @@ def test_bank_statement_basic(client: TestClient):
         "receipt_date": today,
         "description": "Salary",
         "account": account_id,
+        "category_id": cat_work_id,
         "active": True
     }
     r_inc = client.post("/incomes/", json=inc_payload)
@@ -38,6 +48,7 @@ def test_bank_statement_basic(client: TestClient):
         "payment_date": today,
         "description": "Grocery",
         "account": account_id,
+        "category_id": cat_food_id,
         "active": True
     }
     r_exp = client.post("/expenses/", json=exp_payload)
@@ -70,7 +81,7 @@ def test_bank_statement_basic(client: TestClient):
     # Verify Period Summary
     summary = data["period_summary"]
     assert summary["total_income"] == 500.00
-    assert summary["total_expense"] == -200.00
+    assert summary["total_expense"] == 200.00
     assert summary["net_result"] == 300.00 # 500 - 200
 
     # Verify Transactions
@@ -90,12 +101,14 @@ def test_bank_statement_basic(client: TestClient):
     assert salary_tx["amount"] == 500.00
     assert salary_tx["status"] == "recebido"
     assert salary_tx["type"] == "income"
+    assert salary_tx["category_name"] == "Work"
 
     # Check details of Grocery
     grocery_tx = next(t for t in data["transactions"] if t["description"] == "Grocery")
-    assert grocery_tx["amount"] == -200.00 # Expecting negative for expense
+    assert grocery_tx["amount"] == 200.00 # Expecting positive for expense
     assert grocery_tx["status"] == "pago"
     assert grocery_tx["type"] == "expense"
+    assert grocery_tx["category_name"] == "Food"
 
 
 def test_bank_statement_with_filters(client: TestClient):

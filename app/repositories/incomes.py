@@ -28,7 +28,7 @@ def create_income(session, data: IncomeCreate) -> IncomeOut:
             fine=data.fine,
             discount=data.discount,
             total_received=data.total_received,
-            category_id=data.category_id,
+            category_id=str(data.category_id) if data.category_id else None,
             subcategory_id=data.subcategory_id,
             cost_center_id=data.cost_center_id,
             contact_id=data.contact_id,

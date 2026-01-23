@@ -4,12 +4,12 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, func, literal_column, select
+from sqlalchemy import and_, func, select, cast, Text
 from sqlalchemy.orm import Session
 
-from app.db.postgres import accounts, expenses, incomes
+from app.db.postgres import accounts, expenses, incomes, categories
 from app.dependencies import get_db
-from app.schemas.bank_statement import BankStatementResponse, TransactionItem
+from app.schemas.bank_statement import BankStatementResponse, ExpenseStatementItem, IncomeStatementItem
 
 router = APIRouter()
 
@@ -99,19 +99,33 @@ def get_bank_statement(
     current_balance = float(initial_balance + total_incomes - total_expenses)
 
     # 2. List Transactions (Within Date Range) and Calculate Period Summary
-    # Union of Incomes and Expenses
     
     # Incomes Query
     # Use coalesce to fallback to issue_date if receipt_date is null
     # This helps if the user marked as received but didn't provide a receipt date
     income_date_col = func.coalesce(incomes.c.receipt_date, incomes.c.issue_date)
     
+    # Detect dialect for UUID handling in joins
+    bind = session.get_bind()
+    is_sqlite = bind.dialect.name == "sqlite"
+    
+    if is_sqlite:
+        # SQLite stores UUID as 32-char hex string (without hyphens) when using Uuid type.
+        # But incomes/expenses.category_id is Text with hyphens.
+        # cast(categories.id, Text) returns 32-char hex in SQLite.
+        # So we match by removing hyphens from the string column.
+        category_join_condition_inc = cast(categories.c.id, Text) == func.replace(incomes.c.category_id, "-", "")
+        category_join_condition_exp = cast(categories.c.id, Text) == func.replace(expenses.c.category_id, "-", "")
+    else:
+        # Postgres: cast(UUID, Text) returns string with hyphens. Matches standard UUID string.
+        category_join_condition_inc = incomes.c.category_id == cast(categories.c.id, Text)
+        category_join_condition_exp = expenses.c.category_id == cast(categories.c.id, Text)
+
     stmt_inc = select(
-        income_date_col.label("date"),
-        incomes.c.description,
-        incomes.c.total_received.label("amount"),
-        incomes.c.status,
-        literal_column("'income'").label("type")
+        incomes,
+        categories.c.name.label("category_name")
+    ).select_from(
+        incomes.outerjoin(categories, category_join_condition_inc)
     ).where(
         and_(
             incomes.c.active == True,
@@ -122,13 +136,12 @@ def get_bank_statement(
         )
     )
 
-    # Expenses Query (Amount negated)
+    # Expenses Query (Amount positive)
     stmt_exp = select(
-        expenses.c.payment_date.label("date"),
-        expenses.c.description,
-        (-expenses.c.total_paid).label("amount"),
-        expenses.c.status,
-        literal_column("'expense'").label("type")
+        expenses,
+        categories.c.name.label("category_name")
+    ).select_from(
+        expenses.outerjoin(categories, category_join_condition_exp)
     ).where(
         and_(
             expenses.c.active == True,
@@ -139,43 +152,44 @@ def get_bank_statement(
         )
     )
 
-    # Union and Order
-    union_stmt = stmt_inc.union_all(stmt_exp).order_by(literal_column("date").desc())
-    
-    rows = session.execute(union_stmt).all()
+    rows_inc = session.execute(stmt_inc).all()
+    rows_exp = session.execute(stmt_exp).all()
     
     transactions = []
     period_income = Decimal(0)
     period_expense = Decimal(0)
 
-    for row in rows:
-        # Check if date exists (it should due to filter, but safety first)
-        if row.date:
-             amount_val = row.amount
-             transactions.append(TransactionItem(
-                 date=row.date,
-                 description=row.description or "",
-                 amount=amount_val,
-                 status=row.status,
-                 type=row.type
-             ))
+    for row in rows_inc:
+        row_dict = row._mapping
+        amount_val = row_dict.get('total_received') or Decimal(0)
+        period_income += amount_val
+        
+        # Pydantic will ignore extra fields from the row if not in the model
+        transactions.append(IncomeStatementItem(**row_dict))
              
-             # Calculate Period Summary
-             if row.type == 'income':
-                 period_income += amount_val
-             elif row.type == 'expense':
-                 # amount_val is already negative for expenses in the query projection
-                 # But usually summary expects absolute total expense (or negative).
-                 # User example: "total_expense": -11481.75
-                 # So we sum the negative values directly.
-                 period_expense += amount_val
+    for row in rows_exp:
+        row_dict = row._mapping
+        amount_val = row_dict.get('total_paid') or Decimal(0)
+        period_expense += amount_val
+        
+        transactions.append(ExpenseStatementItem(**row_dict))
+
+    # Sort transactions by date descending
+    def get_sort_date(item):
+        if isinstance(item, IncomeStatementItem):
+            return item.receipt_date or item.issue_date or date.min
+        elif isinstance(item, ExpenseStatementItem):
+            return item.payment_date or date.min
+        return date.min
+
+    transactions.sort(key=get_sort_date, reverse=True)
 
     return BankStatementResponse(
         account_balance=current_balance,
         period_summary={
             "total_income": float(period_income),
             "total_expense": float(period_expense),
-            "net_result": float(period_income + period_expense)
+            "net_result": float(period_income - period_expense)
         },
         transactions=transactions
     )
