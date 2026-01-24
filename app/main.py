@@ -10,7 +10,6 @@ from app.routers.contacts import router as contacts_router
 from app.routers.cost_centers import router as cost_centers_router
 from app.routers.credit_card_invoices import router as credit_card_invoices_router
 from app.routers.credit_card_transactions import router as credit_card_transactions_router
-from app.routers.dashboard import router as dashboard_router
 from app.routers.expenses import router as expenses_router
 from app.routers.financial_forecast import router as financial_forecast_router
 from app.routers.incomes import router as incomes_router
@@ -57,7 +56,6 @@ app.include_router(
 app.include_router(incomes_router, prefix="/incomes", tags=["incomes"])
 app.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
 app.include_router(bank_statement_router, prefix="/bank-statement", tags=["bank-statement"])
-app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(
     financial_forecast_router, prefix="/financial-forecast", tags=["financial-forecast"]
 )

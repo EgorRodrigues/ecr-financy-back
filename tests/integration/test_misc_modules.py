@@ -3,17 +3,6 @@ from datetime import date
 from fastapi.testclient import TestClient
 
 
-def test_dashboard(client: TestClient):
-    # Ensure at least one transaction exists (optional, but good for real-world check)
-    # We can create a transaction or just rely on empty state returning valid empty structure
-    res = client.get("/dashboard/?months=6&recent_limit=5")
-    assert res.status_code == 200
-    data = res.json()
-    assert "big_numbers" in data
-    assert "monthly" in data
-    assert "recent_transactions" in data
-
-
 def test_financial_forecast(client: TestClient):
     start_date = str(date.today())
     # end_date 30 days from now
