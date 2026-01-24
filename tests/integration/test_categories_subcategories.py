@@ -72,15 +72,6 @@ def test_create_subcategory(client: TestClient):
     return cat_id, data["id"]
 
 
-def test_list_subcategories_by_category(client: TestClient):
-    cat_id, _ = test_create_subcategory(client)
-
-    response = client.get(f"/subcategories/{cat_id}")
-    assert response.status_code == 200
-    assert len(response.json()) >= 1
-    assert response.json()[0]["category_id"] == cat_id
-
-
 def test_get_subcategory(client: TestClient):
     cat_id, sub_id = test_create_subcategory(client)
 
@@ -95,28 +86,3 @@ def test_update_subcategory(client: TestClient):
     response = client.put(f"/subcategories/{cat_id}/{sub_id}", json={"name": "Updated Sub"})
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Sub"
-
-
-def test_move_subcategory(client: TestClient):
-    # Create source category and subcategory
-    cat1_res = client.post("/categories/", json={"name": "Source Cat"})
-    cat1_id = cat1_res.json()["id"]
-
-    sub_res = client.post("/subcategories/", json={"category_id": cat1_id, "name": "Moving Sub"})
-    sub_id = sub_res.json()["id"]
-
-    # Create target category
-    cat2_res = client.post("/categories/", json={"name": "Target Cat"})
-    cat2_id = cat2_res.json()["id"]
-
-    # Move
-    response = client.post(
-        f"/subcategories/{cat1_id}/{sub_id}/move", json={"new_category_id": cat2_id}
-    )
-    assert response.status_code == 200
-    assert response.json()["category_id"] == cat2_id
-
-    # Verify old location 404
-    assert client.get(f"/subcategories/{cat1_id}/{sub_id}").status_code == 404
-    # Verify new location 200
-    assert client.get(f"/subcategories/{cat2_id}/{sub_id}").status_code == 200

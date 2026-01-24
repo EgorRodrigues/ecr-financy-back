@@ -19,7 +19,6 @@ from app.routers.reports import router as reports_router
 from app.routers.reports_accounts import router as reports_accounts_router
 from app.routers.reports_incomes import router as reports_incomes_router
 from app.routers.subcategories import router as subcategories_router
-from app.routers.transactions import router as transactions_router
 
 
 @asynccontextmanager
@@ -45,7 +44,6 @@ app.add_middleware(
 
 
 app.include_router(health_router, prefix="/health", tags=["health"])
-app.include_router(transactions_router, prefix="/transactions", tags=["transactions"])
 app.include_router(categories_router, prefix="/categories", tags=["categories"])
 app.include_router(subcategories_router, prefix="/subcategories", tags=["subcategories"])
 app.include_router(cost_centers_router, prefix="/cost-centers", tags=["cost_centers"])

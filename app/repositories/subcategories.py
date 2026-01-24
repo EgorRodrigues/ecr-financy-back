@@ -152,20 +152,3 @@ def delete_subcategory(session, category_id: UUID, sid: UUID) -> bool:
     )
     session.commit()
     return True
-
-
-def move_subcategory(
-    session, from_category_id: UUID, sid: UUID, payload: SubcategoryMove
-) -> SubcategoryOut | None:
-    current = get_subcategory(session, from_category_id, sid)
-    if not current:
-        return None
-    now = datetime.now(UTC)
-    session.execute(
-        update(subcategories)
-        .where(subcategories.c.id == sid)
-        .values(category_id=payload.new_category_id, updated_at=now)
-    )
-    session.commit()
-    moved = get_subcategory(session, payload.new_category_id, sid)
-    return moved

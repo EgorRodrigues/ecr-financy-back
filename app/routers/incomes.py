@@ -8,7 +8,6 @@ from app.models.incomes import IncomeCreate, IncomeOut, IncomeUpdate
 from app.repositories.incomes import (
     create_income,
     delete_income,
-    get_income,
     list_incomes,
     update_income,
 )
@@ -30,14 +29,6 @@ def list_(
     session: Session = Depends(get_db),
 ):
     return list_incomes(session, limit, account, account_type, status)
-
-
-@router.get("/{income_id}", response_model=IncomeOut)
-def get(income_id: UUID, session: Session = Depends(get_db)):
-    item = get_income(session, income_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Income not found")
-    return item
 
 
 @router.put("/{income_id}", response_model=IncomeOut)

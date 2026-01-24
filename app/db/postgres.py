@@ -246,16 +246,6 @@ incomes = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
-transactions = Table(
-    "transactions",
-    metadata,
-    Column("id", UUID(as_uuid=True), primary_key=True, default=uuid4),
-    Column("amount", BigInteger, nullable=False),
-    Column("description", Text, nullable=True),
-    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
-    Column("active", Boolean, nullable=False, server_default="true"),
-)
-
 
 credit_card_invoices = Table(
     "credit_card_invoices",

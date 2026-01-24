@@ -8,7 +8,6 @@ from app.models.cost_centers import CostCenterCreate, CostCenterOut, CostCenterU
 from app.repositories.cost_centers import (
     create_cost_center,
     delete_cost_center,
-    get_cost_center,
     list_cost_centers,
     update_cost_center,
 )
@@ -26,15 +25,7 @@ def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_cost_centers(session, limit)
 
 
-@router.get("/{cost_center_id}", response_model=CostCenterOut)
-def get(cost_center_id: UUID, session: Session = Depends(get_db)):
-    item = get_cost_center(session, cost_center_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Cost center not found")
-    return item
-
-
-@router.patch("/{cost_center_id}", response_model=CostCenterOut)
+@router.put("/{cost_center_id}", response_model=CostCenterOut)
 def update(cost_center_id: UUID, payload: CostCenterUpdate, session: Session = Depends(get_db)):
     item = update_cost_center(session, cost_center_id, payload)
     if not item:

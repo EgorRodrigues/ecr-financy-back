@@ -8,7 +8,6 @@ from app.models.contacts import ContactCreate, ContactOut, ContactUpdate
 from app.repositories.contacts import (
     create_contact,
     delete_contact,
-    get_contact,
     list_contacts,
     update_contact,
 )
@@ -24,14 +23,6 @@ def create(payload: ContactCreate, session: Session = Depends(get_db)):
 @router.get("/", response_model=list[ContactOut])
 def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_contacts(session, limit)
-
-
-@router.get("/{contact_id}", response_model=ContactOut)
-def get(contact_id: UUID, session: Session = Depends(get_db)):
-    item = get_contact(session, contact_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    return item
 
 
 @router.put("/{contact_id}", response_model=ContactOut)

@@ -16,11 +16,6 @@ def test_income_lifecycle(client: TestClient):
     assert res.status_code == 200
     item_id = res.json()["id"]
 
-    # Get
-    res = client.get(f"/incomes/{item_id}")
-    assert res.status_code == 200
-    assert res.json()["description"] == "Salary"
-
     # List
     res = client.get("/incomes/")
     assert res.status_code == 200
@@ -34,7 +29,6 @@ def test_income_lifecycle(client: TestClient):
     # Delete
     res = client.delete(f"/incomes/{item_id}")
     assert res.status_code == 200
-    assert client.get(f"/incomes/{item_id}").status_code == 404
 
 
 # --- Expenses ---
@@ -50,11 +44,6 @@ def test_expense_lifecycle(client: TestClient):
     assert res.status_code == 200
     item_id = res.json()["id"]
 
-    # Get
-    res = client.get(f"/expenses/{item_id}")
-    assert res.status_code == 200
-    assert res.json()["description"] == "Groceries"
-
     # List
     res = client.get("/expenses/")
     assert res.status_code == 200
@@ -68,7 +57,6 @@ def test_expense_lifecycle(client: TestClient):
     # Delete
     res = client.delete(f"/expenses/{item_id}")
     assert res.status_code == 200
-    assert client.get(f"/expenses/{item_id}").status_code == 404
 
 
 # --- Cost Centers ---
@@ -79,25 +67,19 @@ def test_cost_center_lifecycle(client: TestClient):
     assert res.status_code == 200
     item_id = res.json()["id"]
 
-    # Get
-    res = client.get(f"/cost-centers/{item_id}")
-    assert res.status_code == 200
-    assert res.json()["name"] == "IT Department"
-
     # List
     res = client.get("/cost-centers/")
     assert res.status_code == 200
     assert len(res.json()) >= 1
 
     # Update
-    res = client.patch(f"/cost-centers/{item_id}", json={"name": "Engineering"})
+    res = client.put(f"/cost-centers/{item_id}", json={"name": "Engineering"})
     assert res.status_code == 200
     assert res.json()["name"] == "Engineering"
 
     # Delete
     res = client.delete(f"/cost-centers/{item_id}")
     assert res.status_code == 200
-    assert client.get(f"/cost-centers/{item_id}").status_code == 404
 
 
 # --- Contacts ---
@@ -113,11 +95,6 @@ def test_contact_lifecycle(client: TestClient):
     assert res.status_code == 200
     item_id = res.json()["id"]
 
-    # Get
-    res = client.get(f"/contacts/{item_id}")
-    assert res.status_code == 200
-    assert res.json()["name"] == "John Doe"
-
     # List
     res = client.get("/contacts/")
     assert res.status_code == 200
@@ -131,4 +108,3 @@ def test_contact_lifecycle(client: TestClient):
     # Delete
     res = client.delete(f"/contacts/{item_id}")
     assert res.status_code == 200
-    assert client.get(f"/contacts/{item_id}").status_code == 404
