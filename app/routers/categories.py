@@ -8,7 +8,6 @@ from app.models.categories import CategoryCreate, CategoryOut, CategoryUpdate
 from app.repositories.categories import (
     create_category,
     delete_category,
-    get_category,
     list_categories,
     update_category,
 )
@@ -24,14 +23,6 @@ def create(payload: CategoryCreate, session: Session = Depends(get_db)):
 @router.get("/", response_model=list[CategoryOut])
 def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_categories(session, limit)
-
-
-@router.get("/{category_id}", response_model=CategoryOut)
-def get(category_id: UUID, session: Session = Depends(get_db)):
-    item = get_category(session, category_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Category not found")
-    return item
 
 
 @router.put("/{category_id}", response_model=CategoryOut)

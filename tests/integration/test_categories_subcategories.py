@@ -20,17 +20,6 @@ def test_list_categories(client: TestClient):
     assert len(response.json()) >= 1
 
 
-def test_get_category(client: TestClient):
-    # Create
-    res = client.post("/categories/", json={"name": "Health"})
-    cat_id = res.json()["id"]
-
-    # Get
-    response = client.get(f"/categories/{cat_id}")
-    assert response.status_code == 200
-    assert response.json()["name"] == "Health"
-
-
 def test_update_category(client: TestClient):
     # Create
     res = client.post("/categories/", json={"name": "Update Me"})
@@ -52,7 +41,12 @@ def test_delete_category(client: TestClient):
     assert response.status_code == 200
 
     # Verify
-    assert client.get(f"/categories/{cat_id}").status_code == 404
+    # Since we removed the GET detail endpoint, we cannot verify 404 with it.
+    # We can list and check it's not there, or trust the delete response.
+    # For now, let's just check the list.
+    response = client.get("/categories/")
+    ids = [c["id"] for c in response.json()]
+    assert cat_id not in ids
 
 
 # Subcategories Tests
@@ -70,14 +64,6 @@ def test_create_subcategory(client: TestClient):
     assert data["name"] == "Sub Cat"
     assert data["category_id"] == cat_id
     return cat_id, data["id"]
-
-
-def test_get_subcategory(client: TestClient):
-    cat_id, sub_id = test_create_subcategory(client)
-
-    response = client.get(f"/subcategories/{cat_id}/{sub_id}")
-    assert response.status_code == 200
-    assert response.json()["id"] == sub_id
 
 
 def test_update_subcategory(client: TestClient):

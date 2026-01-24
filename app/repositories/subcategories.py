@@ -6,7 +6,6 @@ from sqlalchemy import delete, insert, select, update
 from app.db.postgres import subcategories
 from app.models.subcategories import (
     SubcategoryCreate,
-    SubcategoryMove,
     SubcategoryOut,
     SubcategoryUpdate,
 )

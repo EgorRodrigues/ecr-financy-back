@@ -1,14 +1,19 @@
-
-from datetime import date
 from fastapi.testclient import TestClient
+
 
 def test_bank_statement_accounts_param(client: TestClient):
     # 1. Create Two Accounts
-    r_acc1 = client.post("/accounts/", json={"name": "Account 1", "type": "bank", "initial_balance": 1000.00, "active": True})
+    r_acc1 = client.post(
+        "/accounts/",
+        json={"name": "Account 1", "type": "bank", "initial_balance": 1000.00, "active": True},
+    )
     assert r_acc1.status_code == 200
     acc1_id = r_acc1.json()["id"]
 
-    r_acc2 = client.post("/accounts/", json={"name": "Account 2", "type": "bank", "initial_balance": 2000.00, "active": True})
+    r_acc2 = client.post(
+        "/accounts/",
+        json={"name": "Account 2", "type": "bank", "initial_balance": 2000.00, "active": True},
+    )
     assert r_acc2.status_code == 200
     acc2_id = r_acc2.json()["id"]
 
@@ -16,12 +21,12 @@ def test_bank_statement_accounts_param(client: TestClient):
     # Using 'accounts' query param instead of account_ids
     # FastAPI handles list query params by repeating key: ?accounts=id1&accounts=id2
     # But requests/TestClient usually takes a list.
-    
+
     # Test case A: Filter only Account 1
     response = client.get(f"/bank-statement/?accounts={acc1_id}")
     assert response.status_code == 200
     data = response.json()
-    
+
     # Should be 1000 (initial balance of acc1)
     # Note: no transactions created, so balance = initial_balance
     assert data["account_balance"] == 1000.00

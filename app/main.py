@@ -8,12 +8,11 @@ from app.routers.bank_statement import router as bank_statement_router
 from app.routers.categories import router as categories_router
 from app.routers.contacts import router as contacts_router
 from app.routers.cost_centers import router as cost_centers_router
-from app.routers.credit_card_transactions import router as credit_card_transactions_router
 from app.routers.credit_card_invoices import router as credit_card_invoices_router
+from app.routers.credit_card_transactions import router as credit_card_transactions_router
 from app.routers.dashboard import router as dashboard_router
 from app.routers.expenses import router as expenses_router
 from app.routers.financial_forecast import router as financial_forecast_router
-from app.routers.health import router as health_router
 from app.routers.incomes import router as incomes_router
 from app.routers.reports import router as reports_router
 from app.routers.reports_accounts import router as reports_accounts_router
@@ -43,7 +42,6 @@ app.add_middleware(
 )
 
 
-app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(categories_router, prefix="/categories", tags=["categories"])
 app.include_router(subcategories_router, prefix="/subcategories", tags=["subcategories"])
 app.include_router(cost_centers_router, prefix="/cost-centers", tags=["cost_centers"])

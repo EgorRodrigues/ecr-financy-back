@@ -2,7 +2,6 @@ from urllib.parse import quote_plus
 from uuid import uuid4
 
 from sqlalchemy import (
-    BigInteger,
     Boolean,
     Column,
     Date,

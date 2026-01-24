@@ -1,4 +1,4 @@
-from typing import List, Literal, Union
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -25,4 +25,4 @@ class PeriodSummary(BaseModel):
 class BankStatementResponse(BaseModel):
     account_balance: float
     period_summary: PeriodSummary
-    transactions: List[Union[IncomeStatementItem, ExpenseStatementItem]]
+    transactions: list[IncomeStatementItem | ExpenseStatementItem]
