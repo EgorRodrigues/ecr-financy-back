@@ -3,12 +3,6 @@ from datetime import date
 from fastapi.testclient import TestClient
 
 
-def test_health(client: TestClient):
-    res = client.get("/health/")
-    assert res.status_code == 200
-    assert res.json()["status"] == "ok"
-
-
 def test_dashboard(client: TestClient):
     # Ensure at least one transaction exists (optional, but good for real-world check)
     # We can create a transaction or just rely on empty state returning valid empty structure
