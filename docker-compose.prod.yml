@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  app:
+    image: ${IMAGE_NAME}
+    container_name: ecr-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_POSTGRES_HOST=postgres
+      - APP_POSTGRES_PORT=5432
+      - APP_POSTGRES_DATABASE=${POSTGRES_DB}
+      - APP_POSTGRES_USERNAME=${POSTGRES_USER}
+      - APP_POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - APP_JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - APP_JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    container_name: ecr-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
