@@ -10,7 +10,6 @@ def test_create_category(client: TestClient):
     data = response.json()
     assert data["name"] == "Food"
     assert "id" in data
-    return data["id"]
 
 
 def test_list_categories(client: TestClient):
@@ -63,11 +62,20 @@ def test_create_subcategory(client: TestClient):
     data = response.json()
     assert data["name"] == "Sub Cat"
     assert data["category_id"] == cat_id
-    return cat_id, data["id"]
+
+
+def _create_subcategory_helper(client: TestClient):
+    # Need a category first
+    cat_res = client.post("/categories/", json={"name": "Parent Cat Helper"})
+    cat_id = cat_res.json()["id"]
+
+    payload = {"category_id": cat_id, "name": "Sub Cat Helper", "description": "Child", "active": True}
+    response = client.post("/subcategories/", json=payload)
+    return cat_id, response.json()["id"]
 
 
 def test_update_subcategory(client: TestClient):
-    cat_id, sub_id = test_create_subcategory(client)
+    cat_id, sub_id = _create_subcategory_helper(client)
 
     response = client.put(f"/subcategories/{cat_id}/{sub_id}", json={"name": "Updated Sub"})
     assert response.status_code == 200

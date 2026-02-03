@@ -3,17 +3,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers.accounts import router as accounts_router
-from app.routers.bank_statement import router as bank_statement_router
-from app.routers.categories import router as categories_router
-from app.routers.contacts import router as contacts_router
-from app.routers.cost_centers import router as cost_centers_router
-from app.routers.credit_card_invoices import router as credit_card_invoices_router
-from app.routers.credit_card_transactions import router as credit_card_transactions_router
-from app.routers.expenses import router as expenses_router
-from app.routers.financial_forecast import router as financial_forecast_router
-from app.routers.incomes import router as incomes_router
-from app.routers.subcategories import router as subcategories_router
+from app.routers.management.accounts import router as accounts_router
+from app.routers.reports.bank_statement import router as bank_statement_router
+from app.routers.management.categories import router as categories_router
+from app.routers.management.contacts import router as contacts_router
+from app.routers.management.cost_centers import router as cost_centers_router
+from app.routers.management.credit_card_invoices import router as credit_card_invoices_router
+from app.routers.management.credit_card_transactions import router as credit_card_transactions_router
+from app.routers.management.expenses import router as expenses_router
+from app.routers.reports.financial_forecast import router as financial_forecast_router
+from app.routers.management.incomes import router as incomes_router
+from app.routers.management.subcategories import router as subcategories_router
+from app.routers.reports.dashboard import router as dashboard_router
 
 
 @asynccontextmanager
@@ -59,3 +60,4 @@ app.include_router(bank_statement_router, prefix="/bank-statement", tags=["bank-
 app.include_router(
     financial_forecast_router, prefix="/financial-forecast", tags=["financial-forecast"]
 )
+app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])

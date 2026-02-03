@@ -33,11 +33,35 @@ def test_create_cc_transaction(client: TestClient):
     assert "invoice_id" in data
     assert data["invoice_id"] is not None
 
+
+def _create_cc_transaction_helper(client: TestClient):
+    # Create Credit Card Account
+    acc_payload = {
+        "name": "My CC Helper",
+        "type": "credit_card",
+        "closing_day": 5,
+        "due_day": 10,
+        "available_limit": 1000.0,
+    }
+    acc_res = client.post("/accounts/", json=acc_payload)
+    account_id = acc_res.json()["id"]
+
+    # Create Transaction
+    tx_payload = {
+        "amount": 100.50,
+        "description": "Lunch Helper",
+        "account": account_id,
+        "issue_date": str(date.today()),
+        "due_date": str(date.today()),
+        "status": "pendente",
+    }
+    response = client.post("/credit-card-transactions/", json=tx_payload)
+    data = response.json()
     return account_id, data["id"]
 
 
 def test_get_cc_summary(client: TestClient):
-    account_id, _ = test_create_cc_transaction(client)
+    account_id, _ = _create_cc_transaction_helper(client)
 
     response = client.get(f"/credit-card-transactions/summary/{account_id}")
     assert response.status_code == 200
@@ -50,7 +74,7 @@ def test_get_cc_summary(client: TestClient):
 
 
 def test_list_cc_transactions(client: TestClient):
-    account_id, _ = test_create_cc_transaction(client)
+    account_id, _ = _create_cc_transaction_helper(client)
 
     # List all
     response = client.get("/credit-card-transactions/")
@@ -64,7 +88,7 @@ def test_list_cc_transactions(client: TestClient):
 
 
 def test_get_cc_transaction(client: TestClient):
-    _, tx_id = test_create_cc_transaction(client)
+    _, tx_id = _create_cc_transaction_helper(client)
 
     response = client.get(f"/credit-card-transactions/{tx_id}")
     assert response.status_code == 200
@@ -72,7 +96,7 @@ def test_get_cc_transaction(client: TestClient):
 
 
 def test_update_cc_transaction(client: TestClient):
-    _, tx_id = test_create_cc_transaction(client)
+    _, tx_id = _create_cc_transaction_helper(client)
 
     response = client.put(
         f"/credit-card-transactions/{tx_id}",
@@ -85,7 +109,7 @@ def test_update_cc_transaction(client: TestClient):
 
 
 def test_delete_cc_transaction(client: TestClient):
-    _, tx_id = test_create_cc_transaction(client)
+    _, tx_id = _create_cc_transaction_helper(client)
 
     response = client.delete(f"/credit-card-transactions/{tx_id}")
     assert response.status_code == 200

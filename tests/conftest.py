@@ -1,11 +1,38 @@
+import sqlite3
+from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.db.postgres import metadata
 from app.main import app
+
+
+@event.listens_for(Engine, "connect")
+def _connect(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        def to_char(value, fmt):
+            if value is None:
+                return None
+            try:
+                # Handle potential formats
+                if " " in value:
+                    dt = datetime.strptime(value.split(".")[0], "%Y-%m-%d %H:%M:%S")
+                else:
+                    dt = datetime.strptime(value, "%Y-%m-%d")
+            except (ValueError, TypeError):
+                return value
+            
+            if fmt == 'Mon':
+                return dt.strftime('%b')
+            elif fmt == 'YYYY-MM':
+                return dt.strftime('%Y-%m')
+            return str(value)
+            
+        dbapi_connection.create_function("to_char", 2, to_char)
+
 
 
 @pytest.fixture(scope="session")
