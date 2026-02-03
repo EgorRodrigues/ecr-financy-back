@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Text, and_, case, cast, select
+from sqlalchemy import Text, and_, case, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.models.categories import Category
@@ -76,11 +76,20 @@ def get_financial_forecast(
         else_=Income.due_date,
     )
 
+    # Determine amount: total_received if received, else amount
+    inc_amount_col = case(
+        (
+            Income.status == "recebido",
+            func.coalesce(Income.total_received, Income.amount),
+        ),
+        else_=Income.amount,
+    )
+
     stmt_incomes = (
         select(
             Income.id,
             inc_date_col.label("date"),
-            Income.amount,
+            inc_amount_col.label("amount"),
             Income.status,
             Category.name.label("category_name"),
         )
@@ -123,11 +132,20 @@ def get_financial_forecast(
         else_=Expense.due_date,
     )
 
+    # Determine amount: total_paid if paid, else amount
+    exp_amount_col = case(
+        (
+            Expense.status == "pago",
+            func.coalesce(Expense.total_paid, Expense.amount),
+        ),
+        else_=Expense.amount,
+    )
+
     stmt_expenses = (
         select(
             Expense.id,
             exp_date_col.label("date"),
-            Expense.amount,
+            exp_amount_col.label("amount"),
             Expense.status,
             Category.name.label("category_name"),
         )

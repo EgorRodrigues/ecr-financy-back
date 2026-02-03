@@ -25,7 +25,7 @@ def list_(limit: int = 500, session: Session = Depends(get_db)):
     return list_contacts(session, limit)
 
 
-@router.put("/{contact_id}", response_model=ContactOut)
+@router.put("/{contact_id}/", response_model=ContactOut)
 def update(contact_id: UUID, payload: ContactUpdate, session: Session = Depends(get_db)):
     item = update_contact(session, contact_id, payload)
     if not item:
@@ -33,7 +33,7 @@ def update(contact_id: UUID, payload: ContactUpdate, session: Session = Depends(
     return item
 
 
-@router.delete("/{contact_id}")
+@router.delete("/{contact_id}/")
 def delete(contact_id: UUID, session: Session = Depends(get_db)):
     delete_contact(session, contact_id)
     return {"deleted": True}
