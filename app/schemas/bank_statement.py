@@ -2,8 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from app.models.expenses import ExpenseOut
-from app.models.incomes import IncomeOut
+from app.schemas.expenses import ExpenseOut
+from app.schemas.incomes import IncomeOut
 
 
 class IncomeStatementItem(IncomeOut):

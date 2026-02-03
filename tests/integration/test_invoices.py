@@ -3,17 +3,16 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import insert
 
-from app.db.postgres import accounts
+from app.models.accounts import Account
 from app.repositories.credit_card_invoices import ensure_invoice_for_transaction
 
 
 @pytest.fixture
 def test_account(session):
     account_id = uuid4()
-    session.execute(
-        insert(accounts).values(
+    session.add(
+        Account(
             id=account_id,
             name="Test Account Integration",
             type="credit_card",

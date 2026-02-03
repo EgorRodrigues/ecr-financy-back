@@ -1,11 +1,13 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Text, delete, func, insert, select, update
+from sqlalchemy import func, select, cast, Text
+from sqlalchemy.orm import Session
 
-from app.db.postgres import accounts, credit_card_transactions
-from app.models.credit_card_transactions import (
+from app.models.accounts import Account
+from app.models.credit_card_transactions import CreditCardTransaction
+from app.schemas.credit_card_transactions import (
     CreditCardSummary,
     CreditCardTransactionCreate,
     CreditCardTransactionOut,
@@ -17,93 +19,33 @@ from app.repositories.credit_card_invoices import (
     update_invoice_amount,
 )
 
+UTC = timezone.utc
+
 
 def _to_date(value):
     return value.date() if hasattr(value, "date") else value
 
 
-def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | None:
+def get_credit_card_summary(session: Session, account_id: UUID) -> CreditCardSummary | None:
     # 1. Get Account details to find the limit
-    account_row = session.execute(
-        select(accounts.c.available_limit).where(accounts.c.id == account_id)
-    ).one_or_none()
+    account = session.get(Account, account_id)
 
-    if not account_row:
+    if not account:
         return None
 
     total_limit = (
-        account_row.available_limit if account_row.available_limit is not None else Decimal("0")
+        account.available_limit if account.available_limit is not None else Decimal("0")
     )
 
     # 2. Get all transactions for this account (excluding cancelled)
-    query = select(
-        credit_card_transactions.c.id,
-        credit_card_transactions.c.amount,
-        credit_card_transactions.c.status,
-        credit_card_transactions.c.issue_date,
-        credit_card_transactions.c.due_date,
-        credit_card_transactions.c.payment_date,
-        credit_card_transactions.c.original_amount,
-        credit_card_transactions.c.interest,
-        credit_card_transactions.c.fine,
-        credit_card_transactions.c.discount,
-        credit_card_transactions.c.total_paid,
-        credit_card_transactions.c.category_id,
-        credit_card_transactions.c.subcategory_id,
-        credit_card_transactions.c.cost_center_id,
-        credit_card_transactions.c.contact_id,
-        credit_card_transactions.c.description,
-        credit_card_transactions.c.document,
-        credit_card_transactions.c.payment_method,
-        credit_card_transactions.c.account,
-        credit_card_transactions.c.recurrence,
-        credit_card_transactions.c.competence,
-        credit_card_transactions.c.project,
-        credit_card_transactions.c.tags,
-        credit_card_transactions.c.notes,
-        credit_card_transactions.c.active,
-        credit_card_transactions.c.invoice_id,
-        credit_card_transactions.c.created_at,
-        credit_card_transactions.c.updated_at,
-    ).where(
-        credit_card_transactions.c.account == str(account_id),
+    # The 'account' column in CreditCardTransaction is a string (Text)
+    query = select(CreditCardTransaction).where(
+        CreditCardTransaction.account == str(account_id),
     )
 
-    rows = session.execute(query).all()
+    rows = session.scalars(query).all()
 
-    transactions_out = [
-        CreditCardTransactionOut(
-            id=row.id,
-            amount=row.amount if row.amount is not None else Decimal("0"),
-            status=row.status,
-            issue_date=_to_date(row.issue_date),
-            due_date=_to_date(row.due_date),
-            payment_date=_to_date(row.payment_date),
-            original_amount=row.original_amount,
-            interest=row.interest,
-            fine=row.fine,
-            discount=row.discount,
-            total_paid=row.total_paid,
-            category_id=row.category_id,
-            subcategory_id=row.subcategory_id,
-            cost_center_id=row.cost_center_id,
-            contact_id=row.contact_id,
-            description=row.description,
-            document=row.document,
-            payment_method=row.payment_method,
-            account=row.account,
-            recurrence=row.recurrence,
-            competence=row.competence,
-            project=row.project,
-            tags=row.tags,
-            notes=row.notes,
-            active=row.active,
-            invoice_id=row.invoice_id,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-        )
-        for row in rows
-    ]
+    transactions_out = [CreditCardTransactionOut.model_validate(row) for row in rows]
 
     total_spent = sum(t.amount for t in transactions_out if t.status != "cancelado")
     available_limit = total_limit - total_spent
@@ -120,254 +62,91 @@ def get_credit_card_summary(session, account_id: UUID) -> CreditCardSummary | No
 
 
 def create_credit_card_transaction(
-    session, data: CreditCardTransactionCreate
+    session: Session, data: CreditCardTransactionCreate
 ) -> CreditCardTransactionOut:
     eid = uuid4()
     now = datetime.now(UTC)
 
+    transaction_data = data.model_dump()
+    
     # Normalize account to ensure consistency
-    if data.account:
+    if transaction_data.get("account"):
         try:
-            data.account = str(UUID(str(data.account)))
+            transaction_data["account"] = str(UUID(str(transaction_data["account"])))
         except ValueError:
             pass  # Leave as is if not a valid UUID
 
+    # Convert other UUID fields to strings if they are present
+    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id"]:
+        if transaction_data.get(field):
+            transaction_data[field] = str(transaction_data[field])
+
     # Invoice Logic
     invoice_id = None
-    if data.account and data.due_date:
+    if transaction_data.get("account") and transaction_data.get("due_date"):
         # Assuming account is UUID string
         try:
-            account_uuid = UUID(str(data.account))
-            invoice = ensure_invoice_for_transaction(session, account_uuid, data.due_date)
+            account_uuid = UUID(str(transaction_data["account"]))
+            invoice = ensure_invoice_for_transaction(session, account_uuid, transaction_data["due_date"])
             invoice_id = invoice.id
 
-            if data.status != "cancelado":
-                update_invoice_amount(session, invoice.id, data.amount)
+            if transaction_data.get("status") != "cancelado":
+                update_invoice_amount(session, invoice.id, transaction_data["amount"])
         except Exception:
-            # Fallback if account not found or other issue?
-            # For now let it raise or ignore?
-            # Ideally we want this to work.
             pass
-
-    session.execute(
-        insert(credit_card_transactions).values(
-            id=eid,
-            amount=data.amount,
-            status=data.status,
-            issue_date=data.issue_date,
-            due_date=data.due_date,
-            payment_date=data.payment_date,
-            original_amount=data.original_amount,
-            interest=data.interest,
-            fine=data.fine,
-            discount=data.discount,
-            total_paid=data.total_paid,
-            category_id=data.category_id,
-            subcategory_id=data.subcategory_id,
-            cost_center_id=data.cost_center_id,
-            contact_id=data.contact_id,
-            description=data.description,
-            document=data.document,
-            payment_method=data.payment_method,
-            account=data.account,
-            recurrence=data.recurrence,
-            competence=data.competence,
-            project=data.project,
-            tags=data.tags,
-            notes=data.notes,
-            active=data.active,
-            invoice_id=invoice_id,
-            created_at=now,
-            updated_at=now,
-        )
-    )
-    session.commit()
-    return CreditCardTransactionOut(
-        id=eid,
-        amount=data.amount,
-        status=data.status,
-        issue_date=data.issue_date,
-        due_date=data.due_date,
-        payment_date=data.payment_date,
-        original_amount=data.original_amount,
-        interest=data.interest,
-        fine=data.fine,
-        discount=data.discount,
-        total_paid=data.total_paid,
-        category_id=data.category_id,
-        subcategory_id=data.subcategory_id,
-        cost_center_id=data.cost_center_id,
-        contact_id=data.contact_id,
-        description=data.description,
-        document=data.document,
-        payment_method=data.payment_method,
-        account=data.account,
-        recurrence=data.recurrence,
-        competence=data.competence,
-        project=data.project,
-        tags=data.tags,
-        notes=data.notes,
-        active=data.active,
-        invoice_id=invoice_id,
-        created_at=now,
-        updated_at=now,
-    )
+            
+    transaction_data["id"] = eid
+    transaction_data["created_at"] = now
+    transaction_data["updated_at"] = now
+    transaction_data["invoice_id"] = invoice_id
+    
+    # Remove computed fields or fields not in model if any (none expected based on schema)
+    
+    new_transaction = CreditCardTransaction(**transaction_data)
+    session.add(new_transaction)
+    session.flush()
+    session.refresh(new_transaction)
+    
+    return CreditCardTransactionOut.model_validate(new_transaction)
 
 
 def list_credit_card_transactions(
-    session, limit: int = 50, account: str | None = None, account_type: str | None = None
+    session: Session, limit: int = 50, account: str | None = None, account_type: str | None = None
 ) -> list[CreditCardTransactionOut]:
-    query = select(
-        credit_card_transactions.c.id,
-        credit_card_transactions.c.amount,
-        credit_card_transactions.c.status,
-        credit_card_transactions.c.issue_date,
-        credit_card_transactions.c.due_date,
-        credit_card_transactions.c.payment_date,
-        credit_card_transactions.c.original_amount,
-        credit_card_transactions.c.interest,
-        credit_card_transactions.c.fine,
-        credit_card_transactions.c.discount,
-        credit_card_transactions.c.total_paid,
-        credit_card_transactions.c.category_id,
-        credit_card_transactions.c.subcategory_id,
-        credit_card_transactions.c.cost_center_id,
-        credit_card_transactions.c.contact_id,
-        credit_card_transactions.c.description,
-        credit_card_transactions.c.document,
-        credit_card_transactions.c.payment_method,
-        credit_card_transactions.c.account,
-        credit_card_transactions.c.recurrence,
-        credit_card_transactions.c.competence,
-        credit_card_transactions.c.project,
-        credit_card_transactions.c.tags,
-        credit_card_transactions.c.notes,
-        credit_card_transactions.c.active,
-        credit_card_transactions.c.invoice_id,
-        credit_card_transactions.c.created_at,
-        credit_card_transactions.c.updated_at,
-    )
+    query = select(CreditCardTransaction)
 
     if account:
-        query = query.where(credit_card_transactions.c.account == account)
+        query = query.where(CreditCardTransaction.account == account)
 
     if account_type:
         query = query.join(
-            accounts, credit_card_transactions.c.account == func.cast(accounts.c.id, Text)
+            Account, CreditCardTransaction.account == cast(Account.id, Text)
         )
-        query = query.where(accounts.c.type == account_type)
+        query = query.where(Account.type == account_type)
 
-    query = query.order_by(credit_card_transactions.c.created_at.desc())
+    query = query.order_by(CreditCardTransaction.created_at.desc())
 
-    rows = session.execute(query.limit(limit)).all()
-    return [
-        CreditCardTransactionOut(
-            id=row.id,
-            amount=row.amount if row.amount is not None else Decimal("0"),
-            status=row.status,
-            issue_date=_to_date(row.issue_date),
-            due_date=_to_date(row.due_date),
-            payment_date=_to_date(row.payment_date),
-            original_amount=row.original_amount,
-            interest=row.interest,
-            fine=row.fine,
-            discount=row.discount,
-            total_paid=row.total_paid,
-            category_id=row.category_id,
-            subcategory_id=row.subcategory_id,
-            cost_center_id=row.cost_center_id,
-            contact_id=row.contact_id,
-            description=row.description,
-            document=row.document,
-            payment_method=row.payment_method,
-            account=row.account,
-            recurrence=row.recurrence,
-            competence=row.competence,
-            project=row.project,
-            tags=row.tags,
-            notes=row.notes,
-            active=row.active,
-            invoice_id=row.invoice_id,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-        )
-        for row in rows
-    ]
+    rows = session.scalars(query.limit(limit)).all()
+    return [CreditCardTransactionOut.model_validate(row) for row in rows]
 
 
-def get_credit_card_transaction(session, eid: UUID) -> CreditCardTransactionOut | None:
-    row = session.execute(
-        select(
-            credit_card_transactions.c.id,
-            credit_card_transactions.c.amount,
-            credit_card_transactions.c.status,
-            credit_card_transactions.c.issue_date,
-            credit_card_transactions.c.due_date,
-            credit_card_transactions.c.payment_date,
-            credit_card_transactions.c.original_amount,
-            credit_card_transactions.c.interest,
-            credit_card_transactions.c.fine,
-            credit_card_transactions.c.discount,
-            credit_card_transactions.c.total_paid,
-            credit_card_transactions.c.category_id,
-            credit_card_transactions.c.subcategory_id,
-            credit_card_transactions.c.cost_center_id,
-            credit_card_transactions.c.contact_id,
-            credit_card_transactions.c.description,
-            credit_card_transactions.c.document,
-            credit_card_transactions.c.payment_method,
-            credit_card_transactions.c.account,
-            credit_card_transactions.c.recurrence,
-            credit_card_transactions.c.competence,
-            credit_card_transactions.c.project,
-            credit_card_transactions.c.tags,
-            credit_card_transactions.c.notes,
-            credit_card_transactions.c.active,
-            credit_card_transactions.c.invoice_id,
-            credit_card_transactions.c.created_at,
-            credit_card_transactions.c.updated_at,
-        ).where(credit_card_transactions.c.id == eid)
-    ).one_or_none()
+def get_credit_card_transaction(session: Session, eid: UUID) -> CreditCardTransactionOut | None:
+    row = session.get(CreditCardTransaction, eid)
     if not row:
         return None
-    return CreditCardTransactionOut(
-        id=row.id,
-        amount=row.amount if row.amount is not None else Decimal("0"),
-        status=row.status,
-        issue_date=_to_date(row.issue_date),
-        due_date=_to_date(row.due_date),
-        payment_date=_to_date(row.payment_date),
-        original_amount=row.original_amount,
-        interest=row.interest,
-        fine=row.fine,
-        discount=row.discount,
-        total_paid=row.total_paid,
-        category_id=row.category_id,
-        subcategory_id=row.subcategory_id,
-        cost_center_id=row.cost_center_id,
-        contact_id=row.contact_id,
-        description=row.description,
-        document=row.document,
-        payment_method=row.payment_method,
-        account=row.account,
-        recurrence=row.recurrence,
-        competence=row.competence,
-        project=row.project,
-        tags=row.tags,
-        notes=row.notes,
-        active=row.active,
-        invoice_id=row.invoice_id,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-    )
+    return CreditCardTransactionOut.model_validate(row)
 
 
 def update_credit_card_transaction(
-    session, eid: UUID, data: CreditCardTransactionUpdate
+    session: Session, eid: UUID, data: CreditCardTransactionUpdate
 ) -> CreditCardTransactionOut | None:
-    current = get_credit_card_transaction(session, eid)
+    current = session.get(CreditCardTransaction, eid)
     if not current:
         return None
+
+    # Helper to check if value changed
+    def value_changed(old, new):
+        return new is not None and new != old
 
     # Normalize account in update data
     if data.account:
@@ -376,6 +155,7 @@ def update_credit_card_transaction(
         except ValueError:
             pass
 
+    # Prepare new values (using current as fallback for logic)
     new_amount = data.amount if data.amount is not None else current.amount
     new_status = data.status if data.status is not None else current.status
     new_issue_date = data.issue_date if data.issue_date is not None else current.issue_date
@@ -414,15 +194,15 @@ def update_credit_card_transaction(
 
             # Scenario 1: Status Changed to 'cancelado' (Remove amount)
             if current.status != "cancelado" and new_status == "cancelado":
-                delta -= current.amount
+                delta -= Decimal(str(current.amount))
 
             # Scenario 2: Status Changed from 'cancelado' to active (Add amount)
             elif current.status == "cancelado" and new_status != "cancelado":
-                delta += new_amount
+                delta += Decimal(str(new_amount))
 
             # Scenario 3: Amount changed, and neither is 'cancelado'
             elif current.status != "cancelado" and new_status != "cancelado":
-                delta += new_amount - current.amount
+                delta += Decimal(str(new_amount)) - Decimal(str(current.amount))
 
             if delta != Decimal("0"):
                 update_invoice_amount(session, current.invoice_id, delta)
@@ -430,113 +210,50 @@ def update_credit_card_transaction(
         # Invoice Changed
         # Remove from old
         if current.invoice_id and current.status != "cancelado":
-            update_invoice_amount(session, current.invoice_id, -current.amount)
+            update_invoice_amount(session, current.invoice_id, -Decimal(str(current.amount)))
 
         # Add to new
         if new_invoice_id and new_status != "cancelado":
-            update_invoice_amount(session, new_invoice_id, new_amount)
+            update_invoice_amount(session, new_invoice_id, Decimal(str(new_amount)))
 
-    new_payment_date = data.payment_date if data.payment_date is not None else current.payment_date
-    new_category_id = data.category_id if data.category_id is not None else current.category_id
-    new_subcategory_id = (
-        data.subcategory_id if data.subcategory_id is not None else current.subcategory_id
-    )
-    new_cost_center_id = (
-        data.cost_center_id if data.cost_center_id is not None else current.cost_center_id
-    )
-    new_contact_id = data.contact_id if data.contact_id is not None else current.contact_id
-    new_description = data.description if data.description is not None else current.description
-    new_document = data.document if data.document is not None else current.document
-    new_payment_method = (
-        data.payment_method if data.payment_method is not None else current.payment_method
-    )
-    new_recurrence = data.recurrence if data.recurrence is not None else current.recurrence
-    new_competence = data.competence if data.competence is not None else current.competence
-    new_project = data.project if data.project is not None else current.project
-    new_tags = data.tags if data.tags is not None else current.tags
-    new_notes = data.notes if data.notes is not None else current.notes
-    new_active = data.active if data.active is not None else current.active
-    new_original_amount = (
-        data.original_amount if data.original_amount is not None else current.original_amount
-    )
-    new_interest = data.interest if data.interest is not None else current.interest
-    new_fine = data.fine if data.fine is not None else current.fine
-    new_discount = data.discount if data.discount is not None else current.discount
-    new_total_paid = data.total_paid if data.total_paid is not None else current.total_paid
-    now = datetime.now(UTC)
+    # Apply updates to current object
+    has_changes = False
+    
+    update_data = data.model_dump(exclude_unset=True)
+    
+    # Convert UUID fields to strings
+    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id", "account"]:
+        if field in update_data and update_data[field]:
+            update_data[field] = str(update_data[field])
 
-    session.execute(
-        update(credit_card_transactions)
-        .where(credit_card_transactions.c.id == eid)
-        .values(
-            amount=new_amount,
-            status=new_status,
-            issue_date=new_issue_date,
-            due_date=new_due_date,
-            payment_date=new_payment_date,
-            original_amount=new_original_amount,
-            interest=new_interest,
-            fine=new_fine,
-            discount=new_discount,
-            total_paid=new_total_paid,
-            category_id=new_category_id,
-            subcategory_id=new_subcategory_id,
-            cost_center_id=new_cost_center_id,
-            contact_id=new_contact_id,
-            description=new_description,
-            document=new_document,
-            payment_method=new_payment_method,
-            account=new_account,
-            recurrence=new_recurrence,
-            competence=new_competence,
-            project=new_project,
-            tags=new_tags,
-            notes=new_notes,
-            active=new_active,
-            invoice_id=new_invoice_id,
-            updated_at=now,
-        )
-    )
-    session.commit()
-    return CreditCardTransactionOut(
-        id=eid,
-        amount=new_amount,
-        status=new_status,
-        issue_date=new_issue_date,
-        due_date=new_due_date,
-        payment_date=new_payment_date,
-        original_amount=new_original_amount,
-        interest=new_interest,
-        fine=new_fine,
-        discount=new_discount,
-        total_paid=new_total_paid,
-        category_id=new_category_id,
-        subcategory_id=new_subcategory_id,
-        cost_center_id=new_cost_center_id,
-        contact_id=new_contact_id,
-        description=new_description,
-        document=new_document,
-        payment_method=new_payment_method,
-        account=new_account,
-        recurrence=new_recurrence,
-        competence=new_competence,
-        project=new_project,
-        tags=new_tags,
-        notes=new_notes,
-        active=new_active,
-        invoice_id=new_invoice_id,
-        created_at=current.created_at,
-        updated_at=now,
-    )
+    for key, value in update_data.items():
+        if hasattr(current, key) and getattr(current, key) != value:
+            setattr(current, key, value)
+            has_changes = True
+
+    if new_invoice_id != current.invoice_id:
+        current.invoice_id = new_invoice_id
+        has_changes = True
+
+    if has_changes:
+        current.updated_at = datetime.now(UTC)
+        session.add(current)
+        session.flush()
+        session.refresh(current)
+
+    return CreditCardTransactionOut.model_validate(current)
 
 
-def delete_credit_card_transaction(session, eid: UUID) -> bool:
+def delete_credit_card_transaction(session: Session, eid: UUID) -> bool:
     # Handle Invoice Amount?
     # If deleting a non-cancelled transaction, we should decrease invoice amount.
-    current = get_credit_card_transaction(session, eid)
-    if current and current.invoice_id and current.status != "cancelado":
-        update_invoice_amount(session, current.invoice_id, -current.amount)
+    current = session.get(CreditCardTransaction, eid)
+    if not current:
+        return False
+        
+    if current.invoice_id and current.status != "cancelado":
+        update_invoice_amount(session, current.invoice_id, -Decimal(str(current.amount)))
 
-    session.execute(delete(credit_card_transactions).where(credit_card_transactions.c.id == eid))
-    session.commit()
+    session.delete(current)
+    session.flush()
     return True

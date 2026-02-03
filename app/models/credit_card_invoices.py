@@ -1,50 +1,38 @@
 from datetime import date, datetime
-from decimal import Decimal
-from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_serializer
+from sqlalchemy import DateTime, Date, Numeric, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
-
-class CreditCardInvoiceCreate(BaseModel):
-    account_id: UUID
-    period_start: date
-    period_end: date
-    due_date: date
-    amount: Decimal = Decimal("0")
-    status: Literal["open", "closed", "paid"] = "open"
+from app.db.base import Base
 
 
-class CreditCardInvoiceUpdate(BaseModel):
-    amount: Decimal | None = None
-    status: Literal["open", "closed", "paid"] | None = None
-    due_date: date | None = None
-    payment_date: date | None = None
-    interest: Decimal | None = None
-    fine: Decimal | None = None
-    discount: Decimal | None = None
-    total_paid: Decimal | None = None
+class CreditCardInvoice(Base):
+    __tablename__ = "credit_card_invoices"
 
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    account_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False)
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    due_date: Mapped[date] = mapped_column(Date, nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False, default=0)
+    status: Mapped[str] = mapped_column(Text, nullable=False, default="open")
+    payment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    interest: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    fine: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    discount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    total_paid: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    expense_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
-class CreditCardInvoiceOut(BaseModel):
-    id: UUID
-    account_id: UUID
-    period_start: date
-    period_end: date
-    due_date: date
-    amount: Decimal
-    status: Literal["open", "closed", "paid"]
-    payment_date: date | None = None
-    interest: Decimal | None = None
-    fine: Decimal | None = None
-    discount: Decimal | None = None
-    total_paid: Decimal | None = None
-    expense_id: UUID | None = None
-    created_at: datetime
-    updated_at: datetime
-
-    @field_serializer("amount", "interest", "fine", "discount", "total_paid")
-    def _ser_amount(self, v: Decimal | None):
-        if v is None:
-            return None
-        return float(v)
+    __table_args__ = (
+        UniqueConstraint(
+            "account_id", "period_start", "period_end", name="uq_credit_card_invoices_period"
+        ),
+    )

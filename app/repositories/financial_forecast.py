@@ -3,8 +3,10 @@ from datetime import date
 from sqlalchemy import Text, and_, case, cast, select
 from sqlalchemy.orm import Session
 
-from app.db.postgres import categories, expenses, incomes
-from app.models.financial_forecast import ForecastItem
+from app.models.categories import Category
+from app.models.expenses import Expense
+from app.models.incomes import Income
+from app.schemas.financial_forecast import ForecastItem
 
 
 def get_financial_forecast(
@@ -68,24 +70,24 @@ def get_financial_forecast(
     # Determine effective date: receipt_date if received, else due_date
     inc_date_col = case(
         (
-            and_(incomes.c.status == "recebido", incomes.c.receipt_date.is_not(None)),
-            incomes.c.receipt_date,
+            and_(Income.status == "recebido", Income.receipt_date.is_not(None)),
+            Income.receipt_date,
         ),
-        else_=incomes.c.due_date,
+        else_=Income.due_date,
     )
 
     stmt_incomes = (
         select(
-            incomes.c.id,
+            Income.id,
             inc_date_col.label("date"),
-            incomes.c.amount,
-            incomes.c.status,
-            categories.c.name.label("category_name"),
+            Income.amount,
+            Income.status,
+            Category.name.label("category_name"),
         )
-        .outerjoin(categories, incomes.c.category_id == cast(categories.c.id, Text))
+        .outerjoin(Category, Income.category_id == cast(Category.id, Text))
         .where(
             and_(
-                incomes.c.status.in_(["pendente", "recebido"]),
+                Income.status.in_(["pendente", "recebido"]),
                 inc_date_col >= start_date,
                 inc_date_col <= end_date,
             )
@@ -115,24 +117,24 @@ def get_financial_forecast(
     # --- Expenses ---
     exp_date_col = case(
         (
-            and_(expenses.c.status == "pago", expenses.c.payment_date.is_not(None)),
-            expenses.c.payment_date,
+            and_(Expense.status == "pago", Expense.payment_date.is_not(None)),
+            Expense.payment_date,
         ),
-        else_=expenses.c.due_date,
+        else_=Expense.due_date,
     )
 
     stmt_expenses = (
         select(
-            expenses.c.id,
+            Expense.id,
             exp_date_col.label("date"),
-            expenses.c.amount,
-            expenses.c.status,
-            categories.c.name.label("category_name"),
+            Expense.amount,
+            Expense.status,
+            Category.name.label("category_name"),
         )
-        .outerjoin(categories, expenses.c.category_id == cast(categories.c.id, Text))
+        .outerjoin(Category, Expense.category_id == cast(Category.id, Text))
         .where(
             and_(
-                expenses.c.status.in_(["pendente", "pago"]),
+                Expense.status.in_(["pendente", "pago"]),
                 exp_date_col >= start_date,
                 exp_date_col <= end_date,
             )

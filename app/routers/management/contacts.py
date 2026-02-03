@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.contacts import ContactCreate, ContactOut, ContactUpdate
+from app.schemas.contacts import ContactCreate, ContactOut, ContactUpdate
 from app.repositories.contacts import (
     create_contact,
     delete_contact,

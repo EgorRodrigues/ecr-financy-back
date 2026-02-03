@@ -3,11 +3,13 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import insert, select
+from sqlalchemy import select
 
-from app.db.postgres import accounts, credit_card_invoices, expenses
-from app.models.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
-from app.models.expenses import ExpenseUpdate
+from app.models.accounts import Account
+from app.models.credit_card_invoices import CreditCardInvoice
+from app.models.expenses import Expense
+from app.schemas.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
+from app.schemas.expenses import ExpenseUpdate
 from app.repositories.credit_card_invoices import (
     create_invoice,
     delete_invoice,
@@ -20,8 +22,8 @@ from app.repositories.expenses import delete_expense, update_expense
 @pytest.fixture
 def test_account(session):
     account_id = uuid4()
-    session.execute(
-        insert(accounts).values(
+    session.add(
+        Account(
             id=account_id,
             name="Test Account Sync",
             type="credit_card",
@@ -51,8 +53,7 @@ def test_create_invoice_syncs_expense(session, test_account):
 
     # Check Expense
     assert invoice.expense_id is not None
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    expense = session.execute(stmt).one_or_none()
+    expense = session.get(Expense, invoice.expense_id)
 
     assert expense is not None
     assert expense.amount == Decimal("100.00")
@@ -79,8 +80,7 @@ def test_update_invoice_amount_syncs_expense(session, test_account):
     update_invoice_amount(session, invoice.id, Decimal("50.00"))  # Add 50
 
     # Check Expense
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    expense = session.execute(stmt).one_or_none()
+    expense = session.get(Expense, invoice.expense_id)
 
     assert expense.amount == Decimal("150.00")
 
@@ -104,8 +104,7 @@ def test_update_invoice_properties_syncs_expense(session, test_account):
     update_invoice(session, invoice.id, update_data)
 
     # Check Expense
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    expense = session.execute(stmt).one_or_none()
+    expense = session.get(Expense, invoice.expense_id)
 
     assert expense.status == "pago"
     assert expense.due_date == date(2026, 1, 10)
@@ -133,8 +132,7 @@ def test_update_invoice_payment_fields_syncs_expense(session, test_account):
     )
     update_invoice(session, invoice.id, update_data)
 
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    expense = session.execute(stmt).one_or_none()
+    expense = session.get(Expense, invoice.expense_id)
 
     assert expense is not None
     assert expense.status == "pago"
@@ -161,19 +159,16 @@ def test_delete_invoice_syncs_expense(session, test_account):
 
     # Ensure expense exists
     assert invoice.expense_id is not None
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    assert session.execute(stmt).one_or_none() is not None
+    assert session.get(Expense, invoice.expense_id) is not None
 
     # Delete Invoice
     delete_invoice(session, invoice.id)
 
     # Check Expense Deleted
-    stmt = select(expenses).where(expenses.c.id == invoice.expense_id)
-    assert session.execute(stmt).one_or_none() is None
+    assert session.get(Expense, invoice.expense_id) is None
 
     # Check Invoice Deleted
-    stmt = select(credit_card_invoices).where(credit_card_invoices.c.id == invoice.id)
-    assert session.execute(stmt).one_or_none() is None
+    assert session.get(CreditCardInvoice, invoice.id) is None
 
 
 def test_cannot_update_linked_expense_directly(session, test_account):

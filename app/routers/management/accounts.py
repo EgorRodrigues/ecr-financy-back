@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.accounts import AccountCreate, AccountOut, AccountUpdate
+from app.schemas.accounts import AccountCreate, AccountOut, AccountUpdate
 from app.repositories.accounts import (
     create_account,
     delete_account,

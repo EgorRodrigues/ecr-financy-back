@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.financial_forecast import ForecastItem
+from app.schemas.financial_forecast import ForecastItem
 from app.repositories.financial_forecast import get_financial_forecast
 
 router = APIRouter()

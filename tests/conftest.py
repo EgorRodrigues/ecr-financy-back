@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, event, Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.db.postgres import metadata
+from app.db.base import Base
 from app.main import app
 
 
@@ -45,11 +45,11 @@ def db_engine():
     )
 
     # Create tables
-    metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     yield engine
 
-    metadata.drop_all(bind=engine)
+    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")

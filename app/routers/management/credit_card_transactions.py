@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.credit_card_transactions import (
+from app.schemas.credit_card_transactions import (
     CreditCardSummary,
     CreditCardTransactionCreate,
     CreditCardTransactionOut,

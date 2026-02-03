@@ -4,7 +4,8 @@ import sys
 
 from sqlalchemy import text
 
-from app.db.postgres import ensure_tenant_schema, get_engine, metadata
+from app.db.base import Base
+from app.db.postgres import ensure_tenant_schema, get_engine
 
 
 def migrate_public_to_tenant(user_id: str, delete_source: bool = False):
@@ -58,7 +59,7 @@ def migrate_public_to_tenant(user_id: str, delete_source: bool = False):
             # 2. Copy data
             # Use explicit column names to avoid order mismatch issues
             # Get columns from metadata (which matches tenant schema)
-            table_obj = metadata.tables[table_name]
+            table_obj = Base.metadata.tables[table_name]
             columns = [c.name for c in table_obj.columns]
             columns_str = ", ".join(columns)
 

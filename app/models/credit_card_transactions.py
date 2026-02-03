@@ -1,115 +1,46 @@
 from datetime import date, datetime
-from decimal import Decimal
-from typing import Literal, TypeAlias
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_serializer
+from sqlalchemy import Boolean, Date, DateTime, Numeric, Text, func
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.credit_card_invoices import CreditCardInvoiceOut
-
-PaymentMethod: TypeAlias = Literal[
-    "pix", "boleto", "cartao", "transferencia", "dinheiro", "credit_card"
-]
+from app.db.base import Base, CustomArray
 
 
-class CreditCardTransactionCreate(BaseModel):
-    amount: Decimal
-    status: Literal["pendente", "pago", "cancelado"] = "pago"
-    issue_date: date | None = None
-    due_date: date | None = None
-    payment_date: date | None = None
-    original_amount: Decimal | None = None
-    interest: Decimal | None = None
-    fine: Decimal | None = None
-    discount: Decimal | None = None
-    total_paid: Decimal | None = None
-    category_id: str | None = None
-    subcategory_id: str | None = None
-    cost_center_id: str | None = None
-    contact_id: str | None = None
-    description: str | None = None
-    document: str | None = None
-    payment_method: PaymentMethod | None = "credit_card"
-    account: str | None = None
-    recurrence: bool | None = None
-    competence: str | None = None
-    project: str | None = None
-    tags: list[str] | None = None
-    notes: str | None = None
-    active: bool = True
+class CreditCardTransaction(Base):
+    __tablename__ = "credit_card_transactions"
 
-
-class CreditCardTransactionUpdate(BaseModel):
-    amount: Decimal | None = None
-    status: Literal["pendente", "pago", "cancelado"] | None = "pago"
-    issue_date: date | None = None
-    due_date: date | None = None
-    payment_date: date | None = None
-    original_amount: Decimal | None = None
-    interest: Decimal | None = None
-    fine: Decimal | None = None
-    discount: Decimal | None = None
-    total_paid: Decimal | None = None
-    category_id: str | None = None
-    subcategory_id: str | None = None
-    cost_center_id: str | None = None
-    contact_id: str | None = None
-    description: str | None = None
-    document: str | None = None
-    payment_method: PaymentMethod | None = "credit_card"
-    account: str | None = None
-    recurrence: bool | None = None
-    competence: str | None = None
-    project: str | None = None
-    tags: list[str] | None = None
-    notes: str | None = None
-    active: bool | None = None
-
-
-class CreditCardTransactionOut(BaseModel):
-    id: UUID
-    amount: Decimal
-    status: Literal["pendente", "pago", "cancelado"]
-    issue_date: date | None = None
-    due_date: date | None = None
-    payment_date: date | None = None
-    original_amount: Decimal | None = None
-    interest: Decimal | None = None
-    fine: Decimal | None = None
-    discount: Decimal | None = None
-    total_paid: Decimal | None = None
-    category_id: str | None = None
-    subcategory_id: str | None = None
-    cost_center_id: str | None = None
-    contact_id: str | None = None
-    description: str | None = None
-    document: str | None = None
-    payment_method: PaymentMethod | None = None
-    account: str | None = None
-    recurrence: bool | None = None
-    competence: str | None = None
-    project: str | None = None
-    tags: list[str] | None = None
-    notes: str | None = None
-    active: bool
-    invoice_id: UUID | None = None
-    created_at: datetime
-    updated_at: datetime
-
-    @field_serializer("amount", "original_amount", "interest", "fine", "discount", "total_paid")
-    def _ser_amounts(self, v: Decimal | None):
-        from decimal import Decimal as _D
-
-        return float(v if v is not None else _D("0"))
-
-
-class CreditCardSummary(BaseModel):
-    total_limit: Decimal
-    available_limit: Decimal
-    transactions: list[CreditCardTransactionOut]
-    current_invoice: CreditCardInvoiceOut | None = None
-    next_invoices: list[CreditCardInvoiceOut] = []
-
-    @field_serializer("total_limit", "available_limit")
-    def _ser_limits(self, v: Decimal):
-        return float(v)
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    invoice_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    issue_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    payment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    original_amount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    interest: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    fine: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    discount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    total_paid: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    category_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subcategory_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cost_center_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    document: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_method: Mapped[str | None] = mapped_column(Text, nullable=True)
+    account: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recurrence: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    competence: Mapped[str | None] = mapped_column(Text, nullable=True)
+    project: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(CustomArray(Text), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )

@@ -4,7 +4,10 @@ from sqlalchemy import create_engine, pool
 
 from alembic import context
 from app.core.config import settings
-from app.db.postgres import metadata
+from app.db.base import Base
+
+# Import all models to ensure they are attached to Base.metadata
+import app.models  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -31,7 +34,7 @@ def _build_dsn() -> str:
 config.set_main_option("sqlalchemy.url", _build_dsn())
 
 # target metadata for 'autogenerate'
-target_metadata = metadata
+target_metadata = Base.metadata
 
 
 def run_migrations_offline():

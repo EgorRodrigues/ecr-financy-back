@@ -1,14 +1,17 @@
 from datetime import date, timedelta
 from uuid import uuid4
 
-from app.db.postgres import accounts, expenses, incomes
+from app.models.accounts import Account
+from app.models.expenses import Expense
+from app.models.incomes import Income
+
 
 def test_dashboard_endpoint(client, session):
     # 1. Setup Data
     # Account 1
     acct1_id = uuid4()
-    session.execute(
-        accounts.insert().values(
+    session.add(
+        Account(
             id=acct1_id,
             name="Main Account",
             type="bank",
@@ -19,8 +22,8 @@ def test_dashboard_endpoint(client, session):
     
     # Account 2
     acct2_id = uuid4()
-    session.execute(
-        accounts.insert().values(
+    session.add(
+        Account(
             id=acct2_id,
             name="Emergency Fund",
             type="bank",
@@ -32,8 +35,8 @@ def test_dashboard_endpoint(client, session):
     # Incomes for Account 1
     # 1. Income last month
     last_month = date.today().replace(day=1) - timedelta(days=1)
-    session.execute(
-        incomes.insert().values(
+    session.add(
+        Income(
             id=uuid4(),
             description="Salary",
             amount=3000.00,
@@ -45,8 +48,8 @@ def test_dashboard_endpoint(client, session):
     )
     
     # 2. Income this month
-    session.execute(
-        incomes.insert().values(
+    session.add(
+        Income(
             id=uuid4(),
             description="Freelance",
             amount=500.00,
@@ -59,8 +62,8 @@ def test_dashboard_endpoint(client, session):
 
     # Expenses for Account 1
     # 1. Expense last month
-    session.execute(
-        expenses.insert().values(
+    session.add(
+        Expense(
             id=uuid4(),
             description="Rent",
             amount=1200.00,

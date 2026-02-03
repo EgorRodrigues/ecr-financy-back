@@ -1,70 +1,30 @@
 from datetime import datetime
-from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, field_validator
+from sqlalchemy import Boolean, DateTime, Integer, Numeric, Text, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
-AccountType = Literal["bank", "credit_card", "wallet"]
-
-
-class AccountCreate(BaseModel):
-    name: str
-    type: AccountType
-    agency: str | None = None
-    account: str | None = None
-    card_number: str | None = None
-    initial_balance: float | None = None
-    available_limit: float | None = None
-    closing_day: int | None = None
-    due_day: int | None = None
-    active: bool = True
-
-    @field_validator("closing_day", "due_day")
-    @classmethod
-    def validate_day(cls, v: int | None) -> int | None:
-        if v is not None and not (1 <= v <= 31):
-            raise ValueError("Day must be between 1 and 31")
-        return v
+from app.db.base import Base
 
 
-class AccountUpdate(BaseModel):
-    name: str | None = None
-    type: AccountType | None = None
-    agency: str | None = None
-    account: str | None = None
-    card_number: str | None = None
-    initial_balance: float | None = None
-    available_limit: float | None = None
-    closing_day: int | None = None
-    due_day: int | None = None
-    active: bool | None = None
+class Account(Base):
+    __tablename__ = "accounts"
 
-    @field_validator("closing_day", "due_day")
-    @classmethod
-    def validate_day(cls, v: int | None) -> int | None:
-        if v is not None and not (1 <= v <= 31):
-            raise ValueError("Day must be between 1 and 31")
-        return v
-
-
-class AccountOut(BaseModel):
-    id: UUID
-    name: str
-    type: AccountType
-    agency: str | None = None
-    account: str | None = None
-    card_number: str | None = None
-    initial_balance: float | None = None
-    available_limit: float | None = None
-    closing_day: int | None = None
-    due_day: int | None = None
-    created_at: datetime
-    updated_at: datetime
-    active: bool
-
-    @field_validator("card_number")
-    @classmethod
-    def mask_card_number(cls, v: str | None) -> str | None:
-        if v and len(v) >= 4:
-            return f"**** **** **** {v[-4:]}"
-        return v
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    type: Mapped[str] = mapped_column(Text, nullable=False)
+    agency: Mapped[str | None] = mapped_column(Text, nullable=True)
+    account: Mapped[str | None] = mapped_column(Text, nullable=True)
+    card_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    initial_balance: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    available_limit: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    closing_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    due_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")

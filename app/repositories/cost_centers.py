@@ -1,121 +1,58 @@
-from typing import Any
-from uuid import UUID
+from datetime import datetime, UTC
+from uuid import UUID, uuid4
 
-from sqlalchemy import delete, func, insert, select, update
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.postgres import cost_centers
-from app.models.cost_centers import CostCenterCreate, CostCenterOut, CostCenterUpdate
+from app.models.cost_centers import CostCenter
+from app.schemas.cost_centers import CostCenterCreate, CostCenterOut, CostCenterUpdate
 
 
 def create_cost_center(session: Session, data: CostCenterCreate) -> CostCenterOut:
-    stmt = (
-        insert(cost_centers)
-        .values(
-            name=data.name,
-            description=data.description,
-            active=data.active,
-            created_at=func.now(),
-            updated_at=func.now(),
-        )
-        .returning(
-            cost_centers.c.id,
-            cost_centers.c.name,
-            cost_centers.c.description,
-            cost_centers.c.created_at,
-            cost_centers.c.updated_at,
-            cost_centers.c.active,
-        )
+    db_cost_center = CostCenter(
+        **data.model_dump(),
+        id=uuid4(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
-
-    result = session.execute(stmt).one()
+    session.add(db_cost_center)
     session.commit()
-
-    return CostCenterOut(
-        id=result.id,
-        name=result.name,
-        description=result.description,
-        created_at=result.created_at,
-        updated_at=result.updated_at,
-        active=result.active,
-    )
+    session.refresh(db_cost_center)
+    return CostCenterOut.model_validate(db_cost_center)
 
 
-def list_cost_centers(session: Session, limit: int) -> list[CostCenterOut]:
-    stmt = select(cost_centers).limit(limit)
-    result = session.execute(stmt).all()
-
-    return [
-        CostCenterOut(
-            id=row.id,
-            name=row.name,
-            description=row.description,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-            active=row.active,
-        )
-        for row in result
-    ]
+def list_cost_centers(session: Session, limit: int = 50) -> list[CostCenterOut]:
+    query = select(CostCenter).order_by(CostCenter.name.asc()).limit(limit)
+    rows = session.scalars(query).all()
+    return [CostCenterOut.model_validate(row) for row in rows]
 
 
 def get_cost_center(session: Session, cost_center_id: UUID) -> CostCenterOut | None:
-    stmt = select(cost_centers).where(cost_centers.c.id == cost_center_id)
-    result = session.execute(stmt).one_or_none()
-
-    if not result:
+    db_cost_center = session.get(CostCenter, cost_center_id)
+    if not db_cost_center:
         return None
-
-    return CostCenterOut(
-        id=result.id,
-        name=result.name,
-        description=result.description,
-        created_at=result.created_at,
-        updated_at=result.updated_at,
-        active=result.active,
-    )
+    return CostCenterOut.model_validate(db_cost_center)
 
 
 def update_cost_center(
     session: Session, cost_center_id: UUID, data: CostCenterUpdate
 ) -> CostCenterOut | None:
-    values = data.model_dump(exclude_unset=True)
-    if not values:
-        return get_cost_center(session, cost_center_id)
-
-    values["updated_at"] = func.now()
-
-    stmt = (
-        update(cost_centers)
-        .where(cost_centers.c.id == cost_center_id)
-        .values(**values)
-        .returning(
-            cost_centers.c.id,
-            cost_centers.c.name,
-            cost_centers.c.description,
-            cost_centers.c.created_at,
-            cost_centers.c.updated_at,
-            cost_centers.c.active,
-        )
-    )
-
-    result = session.execute(stmt).one_or_none()
-    session.commit()
-
-    if not result:
+    db_cost_center = session.get(CostCenter, cost_center_id)
+    if not db_cost_center:
         return None
 
-    return CostCenterOut(
-        id=result.id,
-        name=result.name,
-        description=result.description,
-        created_at=result.created_at,
-        updated_at=result.updated_at,
-        active=result.active,
-    )
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_cost_center, key, value)
 
-
-def delete_cost_center(session: Session, cost_center_id: UUID) -> bool:
-    stmt = delete(cost_centers).where(cost_centers.c.id == cost_center_id)
-    result: Any = session.execute(stmt)
+    db_cost_center.updated_at = datetime.now(UTC)
     session.commit()
-    return result.rowcount > 0
+    session.refresh(db_cost_center)
+    return CostCenterOut.model_validate(db_cost_center)
+
+
+def delete_cost_center(session: Session, cost_center_id: UUID):
+    db_cost_center = session.get(CostCenter, cost_center_id)
+    if db_cost_center:
+        session.delete(db_cost_center)
+        session.commit()

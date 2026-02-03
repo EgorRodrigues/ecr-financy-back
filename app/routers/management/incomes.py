@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.incomes import IncomeCreate, IncomeOut, IncomeUpdate
+from app.schemas.incomes import IncomeCreate, IncomeOut, IncomeUpdate
 from app.repositories.incomes import (
     create_income,
     delete_income,

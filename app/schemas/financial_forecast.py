@@ -1,9 +1,11 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ForecastItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     month: str
     category: str

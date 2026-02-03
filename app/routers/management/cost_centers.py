@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.cost_centers import CostCenterCreate, CostCenterOut, CostCenterUpdate
+from app.schemas.cost_centers import CostCenterCreate, CostCenterOut, CostCenterUpdate
 from app.repositories.cost_centers import (
     create_cost_center,
     delete_cost_center,

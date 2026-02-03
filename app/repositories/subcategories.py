@@ -1,153 +1,69 @@
-from datetime import UTC, datetime
+from datetime import datetime, UTC
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app.db.postgres import subcategories
-from app.models.subcategories import (
-    SubcategoryCreate,
-    SubcategoryOut,
-    SubcategoryUpdate,
-)
+from app.models.subcategories import Subcategory
+from app.schemas.subcategories import SubcategoryCreate, SubcategoryOut, SubcategoryUpdate
 
 
-def create_subcategory(session, data: SubcategoryCreate) -> SubcategoryOut:
-    sid = uuid4()
-    now = datetime.now(UTC)
-    session.execute(
-        insert(subcategories).values(
-            id=sid,
-            category_id=data.category_id,
-            name=data.name,
-            description=data.description,
-            created_at=now,
-            updated_at=now,
-            active=data.active,
-        )
+def create_subcategory(session: Session, data: SubcategoryCreate) -> SubcategoryOut:
+    db_subcategory = Subcategory(
+        **data.model_dump(),
+        id=uuid4(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
+    session.add(db_subcategory)
     session.commit()
-    return SubcategoryOut(
-        category_id=data.category_id,
-        id=sid,
-        name=data.name,
-        description=data.description,
-        created_at=now,
-        updated_at=now,
-        active=data.active,
-    )
+    session.refresh(db_subcategory)
+    return SubcategoryOut.model_validate(db_subcategory)
 
 
-def list_subcategories(session, category_id: UUID, limit: int = 50) -> list[SubcategoryOut]:
-    rows = session.execute(
-        select(
-            subcategories.c.category_id,
-            subcategories.c.id,
-            subcategories.c.name,
-            subcategories.c.description,
-            subcategories.c.created_at,
-            subcategories.c.updated_at,
-            subcategories.c.active,
-        )
-        .where(subcategories.c.category_id == category_id)
+def list_subcategories(session: Session, category_id: UUID, limit: int = 50) -> list[SubcategoryOut]:
+    query = (
+        select(Subcategory)
+        .where(Subcategory.category_id == category_id)
+        .order_by(Subcategory.name.asc())
         .limit(limit)
-    ).all()
-    return [
-        SubcategoryOut(
-            category_id=row.category_id,
-            id=row.id,
-            name=row.name,
-            description=row.description,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-            active=row.active,
-        )
-        for row in rows
-    ]
-
-
-def list_all_subcategories(session, limit: int = 50) -> list[SubcategoryOut]:
-    rows = session.execute(
-        select(
-            subcategories.c.category_id,
-            subcategories.c.id,
-            subcategories.c.name,
-            subcategories.c.description,
-            subcategories.c.created_at,
-            subcategories.c.updated_at,
-            subcategories.c.active,
-        ).limit(limit)
-    ).all()
-    return [
-        SubcategoryOut(
-            category_id=row.category_id,
-            id=row.id,
-            name=row.name,
-            description=row.description,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-            active=row.active,
-        )
-        for row in rows
-    ]
-
-
-def get_subcategory(session, category_id: UUID, sid: UUID) -> SubcategoryOut | None:
-    row = session.execute(
-        select(
-            subcategories.c.category_id,
-            subcategories.c.id,
-            subcategories.c.name,
-            subcategories.c.description,
-            subcategories.c.created_at,
-            subcategories.c.updated_at,
-            subcategories.c.active,
-        ).where((subcategories.c.category_id == category_id) & (subcategories.c.id == sid))
-    ).one_or_none()
-    if not row:
-        return None
-    return SubcategoryOut(
-        category_id=row.category_id,
-        id=row.id,
-        name=row.name,
-        description=row.description,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        active=row.active,
     )
+    rows = session.scalars(query).all()
+    return [SubcategoryOut.model_validate(row) for row in rows]
+
+
+def list_all_subcategories(session: Session, limit: int = 50) -> list[SubcategoryOut]:
+    query = select(Subcategory).order_by(Subcategory.name.asc()).limit(limit)
+    rows = session.scalars(query).all()
+    return [SubcategoryOut.model_validate(row) for row in rows]
+
+
+def get_subcategory(session: Session, category_id: UUID, sid: UUID) -> SubcategoryOut | None:
+    db_subcategory = session.get(Subcategory, sid)
+    if not db_subcategory or db_subcategory.category_id != category_id:
+        return None
+    return SubcategoryOut.model_validate(db_subcategory)
 
 
 def update_subcategory(
-    session, category_id: UUID, sid: UUID, data: SubcategoryUpdate
+    session: Session, category_id: UUID, sid: UUID, data: SubcategoryUpdate
 ) -> SubcategoryOut | None:
-    current = get_subcategory(session, category_id, sid)
-    if not current:
+    db_subcategory = session.get(Subcategory, sid)
+    if not db_subcategory or db_subcategory.category_id != category_id:
         return None
-    new_name = data.name if data.name is not None else current.name
-    new_desc = data.description if data.description is not None else current.description
-    new_active = data.active if data.active is not None else current.active
-    now = datetime.now(UTC)
-    session.execute(
-        update(subcategories)
-        .where((subcategories.c.category_id == category_id) & (subcategories.c.id == sid))
-        .values(name=new_name, description=new_desc, active=new_active, updated_at=now)
-    )
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_subcategory, key, value)
+
+    db_subcategory.updated_at = datetime.now(UTC)
     session.commit()
-    return SubcategoryOut(
-        category_id=category_id,
-        id=sid,
-        name=new_name,
-        description=new_desc,
-        created_at=current.created_at,
-        updated_at=now,
-        active=new_active,
-    )
+    session.refresh(db_subcategory)
+    return SubcategoryOut.model_validate(db_subcategory)
 
 
-def delete_subcategory(session, category_id: UUID, sid: UUID) -> bool:
-    session.execute(
-        delete(subcategories).where(
-            (subcategories.c.category_id == category_id) & (subcategories.c.id == sid)
-        )
-    )
-    session.commit()
-    return True
+def delete_subcategory(session: Session, category_id: UUID, sid: UUID):
+    db_subcategory = session.get(Subcategory, sid)
+    if db_subcategory and db_subcategory.category_id == category_id:
+        session.delete(db_subcategory)
+        session.commit()

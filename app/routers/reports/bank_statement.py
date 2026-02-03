@@ -6,8 +6,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Text, and_, cast, func, select
 from sqlalchemy.orm import Session
 
-from app.db.postgres import accounts, categories, expenses, incomes
 from app.dependencies import get_db
+from app.models.accounts import Account
+from app.models.categories import Category
+from app.models.expenses import Expense
+from app.models.incomes import Income
 from app.schemas.bank_statement import (
     BankStatementResponse,
     ExpenseStatementItem,
@@ -38,7 +41,6 @@ def get_bank_statement(
         start_date = end_date - timedelta(days=30)
 
     # Consolidate account filters
-    # User might pass account_ids (plural), account_id (singular) or accounts (alias)
     target_accounts = []
     if account_ids:
         target_accounts.extend(account_ids)
@@ -62,34 +64,28 @@ def get_bank_statement(
         print(f"Filtering by accounts: {target_accounts}")
 
         account_strs = [str(aid) for aid in target_accounts]
-        account_id_filter = accounts.c.id.in_(target_accounts)
-        expense_account_filter = expenses.c.account.in_(account_strs)
-        income_account_filter = incomes.c.account.in_(account_strs)
+        account_id_filter = Account.id.in_(target_accounts)
+        expense_account_filter = Expense.account.in_(account_strs)
+        income_account_filter = Income.account.in_(account_strs)
     else:
         print("No account filter applied (returning all accounts)")
 
     # 1. Calculate Current Balance (Saldo Atual)
-    # Formula: Initial Balance (of selected accounts) + Total Incomes (Received)
-    # - Total Expenses (Paid)
-    # This covers the entire history up to now (or implies "current state").
-
     # A. Initial Balance
-    stmt_initial = select(func.sum(accounts.c.initial_balance)).where(
-        and_(accounts.c.active, account_id_filter)
+    stmt_initial = select(func.sum(Account.initial_balance)).where(
+        and_(Account.active == True, account_id_filter)
     )
     initial_balance = session.execute(stmt_initial).scalar() or Decimal(0)
 
-    # B. Total Incomes (Received, Active, Filtered by Account)
-    # Using total_received instead of amount
-    stmt_incomes_total = select(func.sum(incomes.c.total_received)).where(
-        and_(incomes.c.active, incomes.c.status == "recebido", income_account_filter)
+    # B. Total Incomes
+    stmt_incomes_total = select(func.sum(Income.total_received)).where(
+        and_(Income.active == True, Income.status == "recebido", income_account_filter)
     )
     total_incomes = session.execute(stmt_incomes_total).scalar() or Decimal(0)
 
-    # C. Total Expenses (Paid, Active, Filtered by Account)
-    # Using total_paid instead of amount
-    stmt_expenses_total = select(func.sum(expenses.c.total_paid)).where(
-        and_(expenses.c.active, expenses.c.status == "pago", expense_account_filter)
+    # C. Total Expenses
+    stmt_expenses_total = select(func.sum(Expense.total_paid)).where(
+        and_(Expense.active == True, Expense.status == "pago", expense_account_filter)
     )
     total_expenses = session.execute(stmt_expenses_total).scalar() or Decimal(0)
 
@@ -98,37 +94,30 @@ def get_bank_statement(
     # 2. List Transactions (Within Date Range) and Calculate Period Summary
 
     # Incomes Query
-    # Use coalesce to fallback to issue_date if receipt_date is null
-    # This helps if the user marked as received but didn't provide a receipt date
-    income_date_col = func.coalesce(incomes.c.receipt_date, incomes.c.issue_date)
+    income_date_col = func.coalesce(Income.receipt_date, Income.issue_date)
 
     # Detect dialect for UUID handling in joins
     bind = session.get_bind()
     is_sqlite = bind.dialect.name == "sqlite"
 
     if is_sqlite:
-        # SQLite stores UUID as 32-char hex string (without hyphens) when using Uuid type.
-        # But incomes/expenses.category_id is Text with hyphens.
-        # cast(categories.id, Text) returns 32-char hex in SQLite.
-        # So we match by removing hyphens from the string column.
-        category_join_condition_inc = cast(categories.c.id, Text) == func.replace(
-            incomes.c.category_id, "-", ""
+        category_join_condition_inc = cast(Category.id, Text) == func.replace(
+            Income.category_id, "-", ""
         )
-        category_join_condition_exp = cast(categories.c.id, Text) == func.replace(
-            expenses.c.category_id, "-", ""
+        category_join_condition_exp = cast(Category.id, Text) == func.replace(
+            Expense.category_id, "-", ""
         )
     else:
-        # Postgres: cast(UUID, Text) returns string with hyphens. Matches standard UUID string.
-        category_join_condition_inc = incomes.c.category_id == cast(categories.c.id, Text)
-        category_join_condition_exp = expenses.c.category_id == cast(categories.c.id, Text)
+        category_join_condition_inc = Income.category_id == cast(Category.id, Text)
+        category_join_condition_exp = Expense.category_id == cast(Category.id, Text)
 
     stmt_inc = (
-        select(incomes, categories.c.name.label("category_name"))
-        .select_from(incomes.outerjoin(categories, category_join_condition_inc))
+        select(Income, Category.name.label("category_name"))
+        .outerjoin(Category, category_join_condition_inc)
         .where(
             and_(
-                incomes.c.active,
-                incomes.c.status == "recebido",
+                Income.active == True,
+                Income.status == "recebido",
                 income_date_col >= start_date,
                 income_date_col <= end_date,
                 income_account_filter,
@@ -136,16 +125,16 @@ def get_bank_statement(
         )
     )
 
-    # Expenses Query (Amount positive)
+    # Expenses Query
     stmt_exp = (
-        select(expenses, categories.c.name.label("category_name"))
-        .select_from(expenses.outerjoin(categories, category_join_condition_exp))
+        select(Expense, Category.name.label("category_name"))
+        .outerjoin(Category, category_join_condition_exp)
         .where(
             and_(
-                expenses.c.active,
-                expenses.c.status == "pago",
-                expenses.c.payment_date >= start_date,
-                expenses.c.payment_date <= end_date,
+                Expense.active == True,
+                Expense.status == "pago",
+                Expense.payment_date >= start_date,
+                Expense.payment_date <= end_date,
                 expense_account_filter,
             )
         )
@@ -159,19 +148,34 @@ def get_bank_statement(
     period_expense = Decimal(0)
 
     for row in rows_inc:
-        row_dict = row._mapping
-        amount_val = row_dict.get("total_received") or Decimal(0)
+        income_obj = row.Income
+        category_name = row.category_name
+        
+        amount_val = income_obj.total_received or Decimal(0)
         period_income += amount_val
 
-        # Pydantic will ignore extra fields from the row if not in the model
-        transactions.append(IncomeStatementItem(**row_dict))
+        # Convert ORM object to dict and add category_name
+        item_data = income_obj.__dict__.copy()
+        item_data["category_name"] = category_name
+        # Filter out SQLAlchemy state
+        if "_sa_instance_state" in item_data:
+            del item_data["_sa_instance_state"]
+            
+        transactions.append(IncomeStatementItem(**item_data))
 
     for row in rows_exp:
-        row_dict = row._mapping
-        amount_val = row_dict.get("total_paid") or Decimal(0)
+        expense_obj = row.Expense
+        category_name = row.category_name
+        
+        amount_val = expense_obj.total_paid or Decimal(0)
         period_expense += amount_val
 
-        transactions.append(ExpenseStatementItem(**row_dict))
+        item_data = expense_obj.__dict__.copy()
+        item_data["category_name"] = category_name
+        if "_sa_instance_state" in item_data:
+            del item_data["_sa_instance_state"]
+
+        transactions.append(ExpenseStatementItem(**item_data))
 
     # Sort transactions by date descending
     def get_sort_date(item):

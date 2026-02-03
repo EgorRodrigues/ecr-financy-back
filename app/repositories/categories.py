@@ -1,108 +1,56 @@
-from datetime import UTC, datetime
+from datetime import datetime, UTC
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app.db.postgres import categories
-from app.models.categories import CategoryCreate, CategoryOut, CategoryUpdate
+from app.models.categories import Category
+from app.schemas.categories import CategoryCreate, CategoryOut, CategoryUpdate
 
 
-def create_category(session, data: CategoryCreate) -> CategoryOut:
-    cid = uuid4()
-    now = datetime.now(UTC)
-    session.execute(
-        insert(categories).values(
-            id=cid,
-            name=data.name,
-            description=data.description,
-            created_at=now,
-            updated_at=now,
-            active=data.active,
-        )
+def create_category(session: Session, data: CategoryCreate) -> CategoryOut:
+    db_category = Category(
+        **data.model_dump(),
+        id=uuid4(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
+    session.add(db_category)
     session.commit()
-    return CategoryOut(
-        id=cid,
-        name=data.name,
-        description=data.description,
-        created_at=now,
-        updated_at=now,
-        active=data.active,
-    )
+    session.refresh(db_category)
+    return CategoryOut.model_validate(db_category)
 
 
-def list_categories(session, limit: int) -> list[CategoryOut]:
-    rows = session.execute(
-        select(
-            categories.c.id,
-            categories.c.name,
-            categories.c.description,
-            categories.c.created_at,
-            categories.c.updated_at,
-            categories.c.active,
-        ).limit(limit)
-    ).all()
-    return [
-        CategoryOut(
-            id=row.id,
-            name=row.name,
-            description=row.description,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-            active=row.active,
-        )
-        for row in rows
-    ]
+def list_categories(session: Session, limit: int = 50) -> list[CategoryOut]:
+    query = select(Category).order_by(Category.name.asc()).limit(limit)
+    rows = session.scalars(query).all()
+    return [CategoryOut.model_validate(row) for row in rows]
 
 
-def get_category(session, cid: UUID) -> CategoryOut | None:
-    row = session.execute(
-        select(
-            categories.c.id,
-            categories.c.name,
-            categories.c.description,
-            categories.c.created_at,
-            categories.c.updated_at,
-            categories.c.active,
-        ).where(categories.c.id == cid)
-    ).one_or_none()
-    if not row:
+def get_category(session: Session, cid: UUID) -> CategoryOut | None:
+    db_category = session.get(Category, cid)
+    if not db_category:
         return None
-    return CategoryOut(
-        id=row.id,
-        name=row.name,
-        description=row.description,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        active=row.active,
-    )
+    return CategoryOut.model_validate(db_category)
 
 
-def update_category(session, cid: UUID, data: CategoryUpdate) -> CategoryOut | None:
-    current = get_category(session, cid)
-    if not current:
+def update_category(session: Session, cid: UUID, data: CategoryUpdate) -> CategoryOut | None:
+    db_category = session.get(Category, cid)
+    if not db_category:
         return None
-    new_name = data.name if data.name is not None else current.name
-    new_desc = data.description if data.description is not None else current.description
-    new_active = data.active if data.active is not None else current.active
-    now = datetime.now(UTC)
-    session.execute(
-        update(categories)
-        .where(categories.c.id == cid)
-        .values(name=new_name, description=new_desc, active=new_active, updated_at=now)
-    )
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_category, key, value)
+
+    db_category.updated_at = datetime.now(UTC)
     session.commit()
-    return CategoryOut(
-        id=cid,
-        name=new_name,
-        description=new_desc,
-        created_at=current.created_at,
-        updated_at=now,
-        active=new_active,
-    )
+    session.refresh(db_category)
+    return CategoryOut.model_validate(db_category)
 
 
-def delete_category(session, cid: UUID) -> bool:
-    session.execute(delete(categories).where(categories.c.id == cid))
-    session.commit()
-    return True
+def delete_category(session: Session, cid: UUID):
+    db_category = session.get(Category, cid)
+    if db_category:
+        session.delete(db_category)
+        session.commit()

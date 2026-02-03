@@ -1,25 +1,23 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel
+from sqlalchemy import Boolean, DateTime, Text, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 
-
-class CategoryCreate(BaseModel):
-    name: str
-    description: str | None = None
-    active: bool = True
+from app.db.base import Base
 
 
-class CategoryUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    active: bool | None = None
+class Category(Base):
+    __tablename__ = "categories"
 
-
-class CategoryOut(BaseModel):
-    id: UUID
-    name: str
-    description: str | None = None
-    created_at: datetime
-    updated_at: datetime
-    active: bool
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")

@@ -3,8 +3,10 @@ from datetime import date, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.postgres import accounts, expenses, incomes
-from app.models.dashboard import (
+from app.models.accounts import Account
+from app.models.expenses import Expense
+from app.models.incomes import Income
+from app.schemas.dashboard import (
     DashboardAccount,
     DashboardResponse,
     MonthlySummary,
@@ -26,23 +28,18 @@ class DashboardRepository:
     def _get_accounts_with_balance(self) -> list[DashboardAccount]:
         # 1. Accounts with Balance
         # Fetch all active accounts
-        stmt_accounts = select(
-            accounts.c.id,
-            accounts.c.name,
-            accounts.c.initial_balance,
-            accounts.c.type,
-        ).where(accounts.c.active == True)
-        acct_rows = self.session.execute(stmt_accounts).all()
+        stmt_accounts = select(Account).where(Account.active == True)
+        acct_rows = self.session.scalars(stmt_accounts).all()
 
         # Fetch all active incomes
-        stmt_incomes = select(incomes.c.account, incomes.c.amount).where(
-            incomes.c.active == True
+        stmt_incomes = select(Income.account, Income.amount).where(
+            Income.active == True
         )
         income_rows = self.session.execute(stmt_incomes).all()
 
         # Fetch all active expenses
-        stmt_expenses = select(expenses.c.account, expenses.c.amount).where(
-            expenses.c.active == True
+        stmt_expenses = select(Expense.account, Expense.amount).where(
+            Expense.active == True
         )
         expense_rows = self.session.execute(stmt_expenses).all()
 
@@ -89,16 +86,16 @@ class DashboardRepository:
         start_date = today - timedelta(days=180)
 
         # Fetch incomes within range
-        stmt_inc = select(incomes.c.issue_date, incomes.c.amount).where(
-            incomes.c.issue_date >= start_date,
-            incomes.c.active == True,
-            incomes.c.issue_date.isnot(None),
+        stmt_inc = select(Income.issue_date, Income.amount).where(
+            Income.issue_date >= start_date,
+            Income.active == True,
+            Income.issue_date.isnot(None),
         )
         # Fetch expenses within range
-        stmt_exp = select(expenses.c.issue_date, expenses.c.amount).where(
-            expenses.c.issue_date >= start_date,
-            expenses.c.active == True,
-            expenses.c.issue_date.isnot(None),
+        stmt_exp = select(Expense.issue_date, Expense.amount).where(
+            Expense.issue_date >= start_date,
+            Expense.active == True,
+            Expense.issue_date.isnot(None),
         )
 
         inc_rows = self.session.execute(stmt_inc).all()
@@ -142,26 +139,26 @@ class DashboardRepository:
         # Fetch top 10 incomes
         q_inc = (
             select(
-                incomes.c.id,
-                incomes.c.description,
-                incomes.c.amount,
-                incomes.c.issue_date.label("date"),
+                Income.id,
+                Income.description,
+                Income.amount,
+                Income.issue_date.label("date"),
             )
-            .where(incomes.c.active == True)
-            .order_by(incomes.c.issue_date.desc().nulls_last())
+            .where(Income.active == True)
+            .order_by(Income.issue_date.desc().nulls_last())
             .limit(10)
         )
 
         # Fetch top 10 expenses
         q_exp = (
             select(
-                expenses.c.id,
-                expenses.c.description,
-                expenses.c.amount,
-                expenses.c.issue_date.label("date"),
+                Expense.id,
+                Expense.description,
+                Expense.amount,
+                Expense.issue_date.label("date"),
             )
-            .where(expenses.c.active == True)
-            .order_by(expenses.c.issue_date.desc().nulls_last())
+            .where(Expense.active == True)
+            .order_by(Expense.issue_date.desc().nulls_last())
             .limit(10)
         )
 
@@ -199,7 +196,16 @@ class DashboardRepository:
 
         combined.sort(key=sort_key, reverse=True)
 
-        # Take top 10
-        top_10 = combined[:10]
+        # Take top 10 of combined
+        combined = combined[:10]
 
-        return [RecentTransaction(**item) for item in top_10]
+        return [
+            RecentTransaction(
+                id=item["id"],
+                description=item["description"],
+                amount=item["amount"],
+                date=item["date"],
+                type=item["type"],
+            )
+            for item in combined
+        ]

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
+from app.schemas.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
 from app.repositories.expenses import (
     create_expense,
     delete_expense,

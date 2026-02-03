@@ -2,9 +2,9 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.db.postgres import close_postgres, connect_postgres
-from app.models.categories import CategoryCreate
-from app.models.cost_centers import CostCenterCreate
-from app.models.subcategories import SubcategoryCreate
+from app.schemas.categories import CategoryCreate
+from app.schemas.cost_centers import CostCenterCreate
+from app.schemas.subcategories import SubcategoryCreate
 from app.repositories.categories import create_category, list_categories
 from app.repositories.cost_centers import create_cost_center, list_cost_centers
 from app.repositories.subcategories import create_subcategory, list_subcategories

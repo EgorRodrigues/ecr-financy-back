@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_db
-from app.models.subcategories import (
+from app.schemas.subcategories import (
     SubcategoryCreate,
     SubcategoryOut,
     SubcategoryUpdate,
