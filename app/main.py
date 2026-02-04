@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.routers.management.accounts import router as accounts_router
 from app.routers.reports.bank_statement import router as bank_statement_router
@@ -29,6 +30,11 @@ origins = ["*"]
 
 app = FastAPI(title="ECR Financy API", lifespan=lifespan)
 
+
+app.add_middleware(
+    ProxyHeadersMiddleware,
+    trusted_hosts=["*"],  # Trust all proxies (safe if behind a controlled load balancer/proxy)
+)
 
 app.add_middleware(
     CORSMiddleware,
