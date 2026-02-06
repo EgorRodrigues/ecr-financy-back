@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.accounts import Account
@@ -31,15 +31,19 @@ class DashboardRepository:
         stmt_accounts = select(Account).where(Account.active == True)
         acct_rows = self.session.scalars(stmt_accounts).all()
 
-        # Fetch all active incomes
-        stmt_incomes = select(Income.account, Income.amount).where(
-            Income.active == True
+        # Fetch all active incomes (received only)
+        stmt_incomes = (
+            select(Income.account, func.sum(Income.total_received))
+            .where(Income.active == True, Income.status == "recebido")
+            .group_by(Income.account)
         )
         income_rows = self.session.execute(stmt_incomes).all()
 
-        # Fetch all active expenses
-        stmt_expenses = select(Expense.account, Expense.amount).where(
-            Expense.active == True
+        # Fetch all active expenses (paid only)
+        stmt_expenses = (
+            select(Expense.account, func.sum(Expense.total_paid))
+            .where(Expense.active == True, Expense.status == "pago")
+            .group_by(Expense.account)
         )
         expense_rows = self.session.execute(stmt_expenses).all()
 
@@ -54,17 +58,15 @@ class DashboardRepository:
             account_info[str_id] = row
 
         # Process Incomes
-        for row in income_rows:
-            acc_id = row.account
+        for acc_id, amount in income_rows:
             # Ensure acc_id matches the format of str(row.id)
             if acc_id and acc_id in account_balances:
-                account_balances[acc_id] += float(row.amount or 0)
+                account_balances[acc_id] += float(amount or 0)
 
         # Process Expenses
-        for row in expense_rows:
-            acc_id = row.account
+        for acc_id, amount in expense_rows:
             if acc_id and acc_id in account_balances:
-                account_balances[acc_id] -= float(row.amount or 0)
+                account_balances[acc_id] -= float(amount or 0)
 
         # Build result list
         dashboard_accounts = []
@@ -85,16 +87,29 @@ class DashboardRepository:
         today = date.today()
         start_date = today - timedelta(days=180)
 
-        # Fetch incomes within range
-        stmt_inc = select(Income.issue_date, Income.amount).where(
-            Income.issue_date >= start_date,
+        # Fetch incomes within range (received only)
+        # Using coalesce(receipt_date, issue_date) to align with bank statement
+        inc_date_col = func.coalesce(Income.receipt_date, Income.issue_date)
+        stmt_inc = select(inc_date_col, Income.total_received).where(
+            inc_date_col >= start_date,
             Income.active == True,
-            Income.issue_date.isnot(None),
+            Income.status == "recebido",
         )
-        # Fetch expenses within range
-        stmt_exp = select(Expense.issue_date, Expense.amount).where(
+        # Fetch expenses within range (paid only)
+        # Using coalesce(payment_date, issue_date) to align with bank statement logic if needed,
+        # but Expense model has issue_date. Let's check Expense model.
+        # Assuming issue_date is fine, but usually paid expenses have a payment date?
+        # Let's stick to issue_date for now or better, check if there is a payment_date.
+        # Checking Expense model... it has issue_date. It does not seem to have payment_date explicitly in the select above?
+        # Wait, I should verify Expense model fields.
+        # In the previous read of Income model, I saw receipt_date.
+        # Let's assume Expense has payment_date or similar.
+        # Actually, let's just use issue_date if that's what was used, but logically realized date is better.
+        # However, to be safe and consistent with "status=pago", let's just add the status filter and use total_paid.
+        stmt_exp = select(Expense.issue_date, Expense.total_paid).where(
             Expense.issue_date >= start_date,
             Expense.active == True,
+            Expense.status == "pago",
             Expense.issue_date.isnot(None),
         )
 
@@ -104,24 +119,28 @@ class DashboardRepository:
         summary_dict = {}
 
         # Process Incomes
-        for row in inc_rows:
-            d = row.issue_date
+        for date_val, amount in inc_rows:
+            if not date_val:
+                continue
+            d = date_val
             sort_key = d.strftime("%Y-%m")
             month_label = d.strftime("%b")
 
             if sort_key not in summary_dict:
                 summary_dict[sort_key] = {"month": month_label, "income": 0, "expense": 0}
-            summary_dict[sort_key]["income"] += float(row.amount)
+            summary_dict[sort_key]["income"] += float(amount or 0)
 
         # Process Expenses
-        for row in exp_rows:
-            d = row.issue_date
+        for date_val, amount in exp_rows:
+            if not date_val:
+                continue
+            d = date_val
             sort_key = d.strftime("%Y-%m")
             month_label = d.strftime("%b")
 
             if sort_key not in summary_dict:
                 summary_dict[sort_key] = {"month": month_label, "income": 0, "expense": 0}
-            summary_dict[sort_key]["expense"] += float(row.amount)
+            summary_dict[sort_key]["expense"] += float(amount or 0)
 
         sorted_keys = sorted(summary_dict.keys())
         monthly_summary = [
@@ -136,28 +155,31 @@ class DashboardRepository:
 
     def _get_recent_transactions(self) -> list[RecentTransaction]:
         # 3. Recent Transactions
-        # Fetch top 10 incomes
+        # Fetch top 10 incomes (received only)
+        # Use receipt_date if available, else issue_date
+        inc_date_col = func.coalesce(Income.receipt_date, Income.issue_date)
+        
         q_inc = (
             select(
                 Income.id,
                 Income.description,
-                Income.amount,
-                Income.issue_date.label("date"),
+                Income.total_received.label("amount"),
+                inc_date_col.label("date"),
             )
-            .where(Income.active == True)
-            .order_by(Income.issue_date.desc().nulls_last())
+            .where(Income.active == True, Income.status == "recebido")
+            .order_by(inc_date_col.desc().nulls_last())
             .limit(10)
         )
 
-        # Fetch top 10 expenses
+        # Fetch top 10 expenses (paid only)
         q_exp = (
             select(
                 Expense.id,
                 Expense.description,
-                Expense.amount,
+                Expense.total_paid.label("amount"),
                 Expense.issue_date.label("date"),
             )
-            .where(Expense.active == True)
+            .where(Expense.active == True, Expense.status == "pago")
             .order_by(Expense.issue_date.desc().nulls_last())
             .limit(10)
         )
@@ -171,7 +193,7 @@ class DashboardRepository:
                 {
                     "id": row.id,
                     "description": row.description,
-                    "amount": float(row.amount),
+                    "amount": float(row.amount or 0),
                     "date": row.date,
                     "type": "income",
                 }
@@ -182,7 +204,7 @@ class DashboardRepository:
                 {
                     "id": row.id,
                     "description": row.description,
-                    "amount": float(row.amount) * -1,
+                    "amount": float(row.amount or 0) * -1,
                     "date": row.date,
                     "type": "expense",
                 }

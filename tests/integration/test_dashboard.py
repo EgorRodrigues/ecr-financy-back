@@ -40,8 +40,9 @@ def test_dashboard_endpoint(client, session):
             id=uuid4(),
             description="Salary",
             amount=3000.00,
+            total_received=3000.00,
             issue_date=last_month,
-            status="received",
+            status="recebido",
             account=str(acct1_id),
             active=True
         )
@@ -53,8 +54,9 @@ def test_dashboard_endpoint(client, session):
             id=uuid4(),
             description="Freelance",
             amount=500.00,
+            total_received=500.00,
             issue_date=date.today(),
-            status="received",
+            status="recebido",
             account=str(acct1_id),
             active=True
         )
@@ -67,8 +69,9 @@ def test_dashboard_endpoint(client, session):
             id=uuid4(),
             description="Rent",
             amount=1200.00,
+            total_paid=1200.00,
             issue_date=last_month,
-            status="paid",
+            status="pago",
             account=str(acct1_id),
             active=True
         )
