@@ -15,6 +15,7 @@ from app.routers.management.expenses import router as expenses_router
 from app.routers.reports.financial_forecast import router as financial_forecast_router
 from app.routers.management.incomes import router as incomes_router
 from app.routers.management.subcategories import router as subcategories_router
+from app.routers.management.transfers import router as transfers_router
 from app.routers.reports.dashboard import router as dashboard_router
 
 
@@ -66,4 +67,5 @@ app.include_router(bank_statement_router, prefix="/bank-statement", tags=["bank-
 app.include_router(
     financial_forecast_router, prefix="/financial-forecast", tags=["financial-forecast"]
 )
+app.include_router(transfers_router, prefix="/transfers", tags=["transfers"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])

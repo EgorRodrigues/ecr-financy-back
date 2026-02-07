@@ -18,6 +18,7 @@ class AccountCreate(BaseModel):
     closing_day: int | None = None
     due_day: int | None = None
     active: bool = True
+    contact_id: UUID | None = None
 
     @field_validator("closing_day", "due_day")
     @classmethod
@@ -38,6 +39,7 @@ class AccountUpdate(BaseModel):
     closing_day: int | None = None
     due_day: int | None = None
     active: bool | None = None
+    contact_id: UUID | None = None
 
     @field_validator("closing_day", "due_day")
     @classmethod

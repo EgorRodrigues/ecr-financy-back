@@ -152,8 +152,11 @@ def list_invoices(
 
 def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
     # Sync with Expenses first to get ID
-    account_name_query = select(Account.name).where(Account.id == payload.account_id)
-    account_name = session.scalar(account_name_query) or "Unknown Account"
+    account_query = select(Account).where(Account.id == payload.account_id)
+    account = session.scalar(account_query)
+    
+    account_name = account.name if account else "Unknown Account"
+    contact_id = str(account.contact_id) if account and account.contact_id else None
 
     expense_status = "pago" if payload.status == "paid" else "pendente"
     description = f"Fatura Cartão - {account_name} - {payload.due_date.strftime('%m/%Y')}"
@@ -167,6 +170,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         due_date=payload.due_date,
         description=description,
         account=account_name,
+        contact_id=contact_id,
         active=True,
     )
     session.add(new_expense)

@@ -21,6 +21,7 @@ class Account(Base):
     available_limit: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
     closing_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     due_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    contact_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
