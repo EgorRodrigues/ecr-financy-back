@@ -15,6 +15,14 @@ def create_income(session: Session, data: IncomeCreate) -> IncomeOut:
         if income_data.get(field):
             income_data[field] = str(income_data[field])
 
+    # Calculate total_received if status is "recebido"
+    if income_data.get("status") == "recebido":
+        amount = income_data.get("amount") or 0
+        interest = income_data.get("interest") or 0
+        fine = income_data.get("fine") or 0
+        discount = income_data.get("discount") or 0
+        income_data["total_received"] = amount + interest + fine - discount
+
     db_income = Income(
         **income_data,
         id=uuid4(),
@@ -61,6 +69,14 @@ def update_income(session: Session, iid: UUID, data: IncomeUpdate) -> IncomeOut 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_income, key, value)
+
+    # Calculate total_received if status is "recebido"
+    if db_income.status == "recebido":
+        amount = db_income.amount or 0
+        interest = db_income.interest or 0
+        fine = db_income.fine or 0
+        discount = db_income.discount or 0
+        db_income.total_received = amount + interest + fine - discount
 
     db_income.updated_at = datetime.now(UTC)
     session.commit()

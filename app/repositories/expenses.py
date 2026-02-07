@@ -16,6 +16,14 @@ def create_expense(session: Session, data: ExpenseCreate) -> ExpenseOut:
         if expense_data.get(field):
             expense_data[field] = str(expense_data[field])
 
+    # Calculate total_paid if status is "pago"
+    if expense_data.get("status") == "pago":
+        amount = expense_data.get("amount") or 0
+        interest = expense_data.get("interest") or 0
+        fine = expense_data.get("fine") or 0
+        discount = expense_data.get("discount") or 0
+        expense_data["total_paid"] = amount + interest + fine - discount
+
     db_expense = Expense(
         **expense_data,
         id=uuid4(),
@@ -71,6 +79,14 @@ def update_expense(session: Session, eid: UUID, data: ExpenseUpdate) -> ExpenseO
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_expense, key, value)
+
+    # Calculate total_paid if status is "pago"
+    if db_expense.status == "pago":
+        amount = db_expense.amount or 0
+        interest = db_expense.interest or 0
+        fine = db_expense.fine or 0
+        discount = db_expense.discount or 0
+        db_expense.total_paid = amount + interest + fine - discount
 
     db_expense.updated_at = datetime.now(UTC)
     session.commit()
