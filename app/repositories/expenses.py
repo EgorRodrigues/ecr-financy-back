@@ -11,11 +11,7 @@ from app.schemas.expenses import ExpenseCreate, ExpenseOut, ExpenseUpdate
 
 def create_expense(session: Session, data: ExpenseCreate) -> ExpenseOut:
     expense_data = data.model_dump()
-    # Convert UUIDs to strings for Text columns
-    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id", "account"]:
-        if expense_data.get(field):
-            expense_data[field] = str(expense_data[field])
-
+    
     # Calculate total_paid if status is "pago"
     if expense_data.get("status") == "pago":
         amount = expense_data.get("amount") or 0
@@ -46,7 +42,7 @@ def list_expenses(
     query = select(Expense)
 
     if account:
-        query = query.where(Expense.account == account)
+        query = query.where(Expense.account_id == account)
 
     if status:
         query = query.where(Expense.status == status)
@@ -77,6 +73,7 @@ def update_expense(session: Session, eid: UUID, data: ExpenseUpdate) -> ExpenseO
         raise ValueError("Cannot update expense linked to a credit card invoice")
 
     update_data = data.model_dump(exclude_unset=True)
+    
     for key, value in update_data.items():
         setattr(db_expense, key, value)
 

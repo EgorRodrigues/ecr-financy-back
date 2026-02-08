@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import Text, and_, cast, func, select
 from sqlalchemy.orm import Session
 
@@ -52,6 +52,13 @@ def get_bank_statement(
     # Remove duplicates if any
     target_accounts = list(set(target_accounts))
 
+    # Validate account existence
+    if target_accounts:
+        stmt_check = select(Account.id).where(Account.id.in_(target_accounts))
+        found_ids = session.scalars(stmt_check).all()
+        if len(found_ids) < len(target_accounts):
+            raise HTTPException(status_code=404, detail="Account not found")
+
     # Prepare account filters
     # expenses/incomes table account column is UUID.
 
@@ -64,8 +71,8 @@ def get_bank_statement(
         print(f"Filtering by accounts: {target_accounts}")
 
         account_id_filter = Account.id.in_(target_accounts)
-        expense_account_filter = Expense.account.in_(target_accounts)
-        income_account_filter = Income.account.in_(target_accounts)
+        expense_account_filter = Expense.account_id.in_(target_accounts)
+        income_account_filter = Income.account_id.in_(target_accounts)
     else:
         print("No account filter applied (returning all accounts)")
 
@@ -107,8 +114,8 @@ def get_bank_statement(
             Expense.category_id, "-", ""
         )
     else:
-        category_join_condition_inc = Income.category_id == cast(Category.id, Text)
-        category_join_condition_exp = Expense.category_id == cast(Category.id, Text)
+        category_join_condition_inc = Income.category_id == Category.id
+        category_join_condition_exp = Expense.category_id == Category.id
 
     stmt_inc = (
         select(Income, Category.name.label("category_name"))

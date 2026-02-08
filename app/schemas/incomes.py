@@ -24,7 +24,7 @@ class IncomeCreate(BaseModel):
     description: str | None = None
     document: str | None = None
     receiving_method: Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"] | None = None
-    account: str | UUID | None = None
+    account_id: UUID | None = None
     recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
@@ -51,7 +51,7 @@ class IncomeUpdate(BaseModel):
     description: str | None = None
     document: str | None = None
     receiving_method: Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"] | None = None
-    account: str | UUID | None = None
+    account_id: UUID | None = None
     recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
@@ -81,7 +81,7 @@ class IncomeOut(BaseModel):
     description: str | None = None
     document: str | None = None
     receiving_method: Literal["pix", "boleto", "cartao", "transferencia", "dinheiro"] | None = None
-    account: str | UUID | None = None
+    account_id: UUID | None = None
     recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None

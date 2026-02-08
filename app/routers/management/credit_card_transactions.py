@@ -38,11 +38,11 @@ def get_summary(account_id: UUID, session: Session = Depends(get_db)):
 @router.get("/", response_model=list[CreditCardTransactionOut])
 def list_(
     limit: int = 50,
-    account: str | None = None,
+    account_id: UUID | None = None,
     account_type: str | None = None,
     session: Session = Depends(get_db),
 ):
-    return list_credit_card_transactions(session, limit, account, account_type)
+    return list_credit_card_transactions(session, limit, account_id, account_type)
 
 
 @router.get("/{transaction_id}", response_model=CreditCardTransactionOut)

@@ -35,7 +35,7 @@ class CreditCardTransaction(Base):
     recurrence: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     competence: Mapped[str | None] = mapped_column(Text, nullable=True)
     project: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tags: Mapped[list[str] | None] = mapped_column(PG_ARRAY(Text), nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(CustomArray(Text), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

@@ -169,7 +169,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         status=expense_status,
         due_date=payload.due_date,
         description=description,
-        account=account_name,
+        account_id=payload.account_id,
         contact_id=contact_id,
         active=True,
     )

@@ -48,14 +48,14 @@ def test_transfer_creates_expense_and_income(client, session):
     # Expense should be in Source Account, paid to Destination Bank (contact_dest_bank)
     expense = session.get(Expense, UUID(data["expense_id"]))
     assert expense.amount == 100.50
-    assert expense.account == "Account A"
-    assert expense.contact_id == str(contact_dest_bank.id) # Key verification
+    assert expense.account_id == source_account.id
+    assert expense.contact_id == contact_dest_bank.id # Key verification
     assert expense.status == "pago"
 
     # 5. Verify Income (Destination)
     # Income should be in Destination Account, received from Source Bank (contact_source_bank)
     income = session.get(Income, UUID(data["income_id"]))
     assert income.amount == 100.50
-    assert income.account == "Account B"
-    assert income.contact_id == str(contact_source_bank.id) # Key verification
+    assert income.account_id == dest_account.id
+    assert income.contact_id == contact_source_bank.id # Key verification
     assert income.status == "recebido"

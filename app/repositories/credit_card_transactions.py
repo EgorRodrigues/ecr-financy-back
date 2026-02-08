@@ -39,8 +39,9 @@ def get_credit_card_summary(session: Session, account_id: UUID) -> CreditCardSum
 
     # 2. Get all transactions for this account (excluding cancelled)
     # The 'account' column in CreditCardTransaction is a string (Text)
+    # Wait, it's actually account_id and it is UUID.
     query = select(CreditCardTransaction).where(
-        CreditCardTransaction.account == str(account_id),
+        CreditCardTransaction.account_id == account_id,
     )
 
     rows = session.scalars(query).all()
@@ -69,24 +70,11 @@ def create_credit_card_transaction(
 
     transaction_data = data.model_dump()
     
-    # Normalize account to ensure consistency
-    if transaction_data.get("account"):
-        try:
-            transaction_data["account"] = str(UUID(str(transaction_data["account"])))
-        except ValueError:
-            pass  # Leave as is if not a valid UUID
-
-    # Convert other UUID fields to strings if they are present
-    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id"]:
-        if transaction_data.get(field):
-            transaction_data[field] = str(transaction_data[field])
-
     # Invoice Logic
     invoice_id = None
-    if transaction_data.get("account") and transaction_data.get("due_date"):
-        # Assuming account is UUID string
+    if transaction_data.get("account_id") and transaction_data.get("due_date"):
         try:
-            account_uuid = UUID(str(transaction_data["account"]))
+            account_uuid = transaction_data["account_id"]
             invoice = ensure_invoice_for_transaction(session, account_uuid, transaction_data["due_date"])
             invoice_id = invoice.id
 
@@ -111,16 +99,16 @@ def create_credit_card_transaction(
 
 
 def list_credit_card_transactions(
-    session: Session, limit: int = 50, account: str | None = None, account_type: str | None = None
+    session: Session, limit: int = 50, account_id: UUID | None = None, account_type: str | None = None
 ) -> list[CreditCardTransactionOut]:
     query = select(CreditCardTransaction)
 
-    if account:
-        query = query.where(CreditCardTransaction.account == account)
+    if account_id:
+        query = query.where(CreditCardTransaction.account_id == account_id)
 
     if account_type:
         query = query.join(
-            Account, CreditCardTransaction.account == cast(Account.id, Text)
+            Account, CreditCardTransaction.account_id == Account.id
         )
         query = query.where(Account.type == account_type)
 
@@ -149,40 +137,37 @@ def update_credit_card_transaction(
         return new is not None and new != old
 
     # Normalize account in update data
-    if data.account:
-        try:
-            data.account = str(UUID(str(data.account)))
-        except ValueError:
-            pass
-
+    update_dict = data.model_dump(exclude_unset=True)
+    
+    if "account" in update_dict:
+        update_dict["account_id"] = update_dict.pop("account")
+    
     # Prepare new values (using current as fallback for logic)
-    new_amount = data.amount if data.amount is not None else current.amount
-    new_status = data.status if data.status is not None else current.status
-    new_issue_date = data.issue_date if data.issue_date is not None else current.issue_date
-    new_due_date = data.due_date if data.due_date is not None else current.due_date
-    new_account = data.account if data.account is not None else current.account
+    new_amount = update_dict.get("amount", current.amount)
+    new_status = update_dict.get("status", current.status)
+    new_issue_date = update_dict.get("issue_date", current.issue_date)
+    new_due_date = update_dict.get("due_date", current.due_date)
+    new_account_id = update_dict.get("account_id", current.account_id)
 
     # Determine new invoice
     new_invoice_id = current.invoice_id
     recalc_invoice = False
 
     # Check triggers for invoice recalculation
-    # If due_date changed, OR issue_date changed (and no due_date), OR account changed
     if (
-        (data.due_date is not None and data.due_date != current.due_date)
+        ("due_date" in update_dict and new_due_date != current.due_date)
         or (
-            data.issue_date is not None
-            and data.issue_date != current.issue_date
+            "issue_date" in update_dict
+            and new_issue_date != current.issue_date
             and new_due_date is None
         )
-        or (data.account is not None and str(data.account) != str(current.account))
+        or ("account_id" in update_dict and new_account_id != current.account_id)
     ):
         recalc_invoice = True
 
-    if recalc_invoice and new_account and new_issue_date is not None:
+    if recalc_invoice and new_account_id and new_issue_date is not None:
         try:
-            account_uuid = UUID(str(new_account))
-            new_invoice = ensure_invoice_for_transaction(session, account_uuid, new_issue_date)
+            new_invoice = ensure_invoice_for_transaction(session, new_account_id, new_issue_date)
             new_invoice_id = new_invoice.id
         except Exception:
             pass
@@ -217,30 +202,16 @@ def update_credit_card_transaction(
             update_invoice_amount(session, new_invoice_id, Decimal(str(new_amount)))
 
     # Apply updates to current object
-    has_changes = False
-    
-    update_data = data.model_dump(exclude_unset=True)
-    
-    # Convert UUID fields to strings
-    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id", "account"]:
-        if field in update_data and update_data[field]:
-            update_data[field] = str(update_data[field])
-
-    for key, value in update_data.items():
-        if hasattr(current, key) and getattr(current, key) != value:
-            setattr(current, key, value)
-            has_changes = True
+    for key, value in update_dict.items():
+        setattr(current, key, value)
 
     if new_invoice_id != current.invoice_id:
         current.invoice_id = new_invoice_id
-        has_changes = True
 
-    if has_changes:
-        current.updated_at = datetime.now(UTC)
-        session.add(current)
-        session.flush()
-        session.refresh(current)
-
+    current.updated_at = datetime.now(UTC)
+    session.add(current)
+    session.commit()
+    session.refresh(current)
     return CreditCardTransactionOut.model_validate(current)
 
 

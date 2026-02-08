@@ -1,4 +1,5 @@
 from datetime import date
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -32,7 +33,7 @@ def test_bank_statement_basic(client: TestClient):
         "status": "recebido",
         "receipt_date": today,
         "description": "Salary",
-        "account": account_id,
+        "account_id": account_id,
         "category_id": cat_work_id,
         "active": True,
     }
@@ -46,7 +47,7 @@ def test_bank_statement_basic(client: TestClient):
         "status": "pago",
         "payment_date": today,
         "description": "Grocery",
-        "account": account_id,
+        "account_id": account_id,
         "category_id": cat_food_id,
         "active": True,
     }
@@ -62,7 +63,7 @@ def test_bank_statement_basic(client: TestClient):
         # if status is pending
         "payment_date": today,
         "description": "Future Bill",
-        "account": account_id,
+        "account_id": account_id,
         "active": True,
     }
     r_exp_p = client.post("/expenses/", json=exp_pending_payload)
@@ -128,7 +129,7 @@ def test_bank_statement_with_filters(client: TestClient):
             "total_received": 100,
             "status": "recebido",
             "receipt_date": today,
-            "account": aid,
+            "account_id": aid,
             "description": "Today Inc",
         },
     )
@@ -154,7 +155,7 @@ def test_bank_statement_with_filters(client: TestClient):
             "total_paid": 50,
             "status": "pago",
             "payment_date": past_date,
-            "account": aid,
+            "account_id": aid,
             "description": "Old Exp",
         },
     )
@@ -195,7 +196,7 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
             "total_received": 50,
             "status": "recebido",
             "receipt_date": today,
-            "account": aid_a,
+            "account_id": aid_a,
             "description": "Inc A",
         },
     )
@@ -208,7 +209,7 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
             "total_received": 60,
             "status": "recebido",
             "receipt_date": today,
-            "account": aid_b,
+            "account_id": aid_b,
             "description": "Inc B",
         },
     )
@@ -239,3 +240,21 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
 
     # Total Balance: 150 + 260 = 410
     assert data["account_balance"] == 410.00
+
+
+def test_bank_statement_returns_404_for_non_existent_account(client: TestClient):
+    # Use a random UUID that shouldn't exist
+    random_id = str(uuid4())
+    
+    response = client.get(f"/bank-statement/?account_id={random_id}")
+    
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Account not found"
+
+def test_bank_statement_returns_404_for_non_existent_account_in_list(client: TestClient):
+    random_id = str(uuid4())
+    
+    # Passing via query list param
+    response = client.get(f"/bank-statement/?account_ids={random_id}")
+    
+    assert response.status_code == 404

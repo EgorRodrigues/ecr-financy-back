@@ -20,7 +20,7 @@ def test_create_cc_transaction(client: TestClient):
     tx_payload = {
         "amount": 100.50,
         "description": "Lunch",
-        "account": account_id,
+        "account_id": account_id,
         "issue_date": str(date.today()),
         "due_date": str(date.today()),  # Just setting a date to trigger invoice creation
         "status": "pendente",
@@ -29,7 +29,7 @@ def test_create_cc_transaction(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     assert data["amount"] == 100.50
-    assert data["account"] == account_id
+    assert data["account_id"] == account_id
     assert "invoice_id" in data
     assert data["invoice_id"] is not None
 
@@ -50,7 +50,7 @@ def _create_cc_transaction_helper(client: TestClient):
     tx_payload = {
         "amount": 100.50,
         "description": "Lunch Helper",
-        "account": account_id,
+        "account_id": account_id,
         "issue_date": str(date.today()),
         "due_date": str(date.today()),
         "status": "pendente",
@@ -82,7 +82,7 @@ def test_list_cc_transactions(client: TestClient):
     assert len(response.json()) >= 1
 
     # Filter by account
-    response = client.get(f"/credit-card-transactions/?account={account_id}")
+    response = client.get(f"/credit-card-transactions/?account_id={account_id}")
     assert response.status_code == 200
     assert len(response.json()) >= 1
 

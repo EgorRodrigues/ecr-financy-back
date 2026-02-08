@@ -29,8 +29,8 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
     # 2. Determine Contacts (Supplier/Customer)
     # Expense Supplier = Destination Account's Contact (e.g. "Nubank")
     # Income Customer = Source Account's Contact (e.g. "Itaú")
-    expense_contact_id = str(destination_account.contact_id) if destination_account.contact_id else None
-    income_contact_id = str(source_account.contact_id) if source_account.contact_id else None
+    expense_contact_id = destination_account.contact_id
+    income_contact_id = source_account.contact_id
 
     # 3. Create Expense (Money leaving source)
     description = payload.description or f"Transferência para {destination_account.name}"
@@ -44,7 +44,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         due_date=payload.date,
         payment_date=payload.date,
         description=description,
-        account=source_account.id,
+        account_id=source_account.id,
         contact_id=expense_contact_id,
         category_id=payload.category_id,
         subcategory_id=payload.subcategory_id,
@@ -68,7 +68,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         due_date=payload.date,
         receipt_date=payload.date,
         description=income_description,
-        account=destination_account.id,
+        account_id=destination_account.id,
         contact_id=income_contact_id,
         category_id=payload.category_id,
         subcategory_id=payload.subcategory_id,

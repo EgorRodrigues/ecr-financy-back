@@ -10,11 +10,7 @@ from app.schemas.incomes import IncomeCreate, IncomeOut, IncomeUpdate
 
 def create_income(session: Session, data: IncomeCreate) -> IncomeOut:
     income_data = data.model_dump()
-    # Convert UUIDs to strings for Text columns
-    for field in ["category_id", "subcategory_id", "cost_center_id", "contact_id", "account"]:
-        if income_data.get(field):
-            income_data[field] = str(income_data[field])
-
+    
     # Calculate total_received if status is "recebido"
     if income_data.get("status") == "recebido":
         amount = income_data.get("amount") or 0
@@ -44,7 +40,7 @@ def list_incomes(
 ) -> list[IncomeOut]:
     query = select(Income)
     if account:
-        query = query.where(Income.account == account)
+        query = query.where(Income.account_id == account)
 
     if status:
         query = query.where(Income.status == status)
@@ -67,6 +63,7 @@ def update_income(session: Session, iid: UUID, data: IncomeUpdate) -> IncomeOut 
         return None
 
     update_data = data.model_dump(exclude_unset=True)
+    
     for key, value in update_data.items():
         setattr(db_income, key, value)
 

@@ -33,17 +33,17 @@ class DashboardRepository:
 
         # Fetch all active incomes (received only)
         stmt_incomes = (
-            select(Income.account, func.sum(Income.total_received))
+            select(Income.account_id, func.sum(Income.total_received))
             .where(Income.active == True, Income.status == "recebido")
-            .group_by(Income.account)
+            .group_by(Income.account_id)
         )
         income_rows = self.session.execute(stmt_incomes).all()
 
         # Fetch all active expenses (paid only)
         stmt_expenses = (
-            select(Expense.account, func.sum(Expense.total_paid))
+            select(Expense.account_id, func.sum(Expense.total_paid))
             .where(Expense.active == True, Expense.status == "pago")
-            .group_by(Expense.account)
+            .group_by(Expense.account_id)
         )
         expense_rows = self.session.execute(stmt_expenses).all()
 
@@ -60,13 +60,17 @@ class DashboardRepository:
         # Process Incomes
         for acc_id, amount in income_rows:
             # Ensure acc_id matches the format of str(row.id)
-            if acc_id and acc_id in account_balances:
-                account_balances[acc_id] += float(amount or 0)
+            if acc_id:
+                str_acc_id = str(acc_id)
+                if str_acc_id in account_balances:
+                    account_balances[str_acc_id] += float(amount or 0)
 
         # Process Expenses
         for acc_id, amount in expense_rows:
-            if acc_id and acc_id in account_balances:
-                account_balances[acc_id] -= float(amount or 0)
+            if acc_id:
+                str_acc_id = str(acc_id)
+                if str_acc_id in account_balances:
+                    account_balances[str_acc_id] -= float(amount or 0)
 
         # Build result list
         dashboard_accounts = []

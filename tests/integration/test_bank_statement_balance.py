@@ -21,7 +21,7 @@ def test_bank_statement_balance_persistence(client: TestClient):
             "status": "recebido",
             "receipt_date": yesterday,
             "description": "Old Income",
-            "account": aid,
+            "account_id": aid,
             "active": True,
         },
     )

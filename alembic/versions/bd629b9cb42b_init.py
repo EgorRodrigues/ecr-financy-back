@@ -1,15 +1,15 @@
 """init
 
-Revision ID: 8065fbcf86f4
+Revision ID: bd629b9cb42b
 Revises: 
-Create Date: 2026-02-08 16:04:18.206651
+Create Date: 2026-02-08 21:15:11.853697
 """
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from app.db.base import CustomArray
 
-revision: str = '8065fbcf86f4'
+revision: str = 'bd629b9cb42b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -111,7 +111,7 @@ def upgrade() -> None:
     sa.Column('recurrence', sa.Boolean(), nullable=True),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
-    sa.Column('tags', postgresql.ARRAY(sa.Text()), nullable=True),
+    sa.Column('tags', CustomArray(sa.Text()), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -141,7 +141,7 @@ def upgrade() -> None:
     sa.Column('recurrence', sa.Boolean(), nullable=True),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
-    sa.Column('tags', postgresql.ARRAY(sa.Text()), nullable=True),
+    sa.Column('tags', CustomArray(sa.Text()), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('active', sa.Boolean(), server_default='true', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -171,7 +171,7 @@ def upgrade() -> None:
     sa.Column('recurrence', sa.Boolean(), nullable=True),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
-    sa.Column('tags', postgresql.ARRAY(sa.Text()), nullable=True),
+    sa.Column('tags', CustomArray(sa.Text()), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('active', sa.Boolean(), server_default='true', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),

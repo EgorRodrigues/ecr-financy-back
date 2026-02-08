@@ -28,7 +28,7 @@ def test_bank_statement_total_incomes_error(client, session):
             total_received=5000.00,
             issue_date=date.today(),
             status="recebido",
-            account=account_id,
+            account_id=account_id,
             active=True
         )
     )
@@ -42,7 +42,7 @@ def test_bank_statement_total_incomes_error(client, session):
             total_received=None, # Pending often has None here
             issue_date=date.today(),
             status="pendente",
-            account=account_id,
+            account_id=account_id,
             active=True
         )
     )

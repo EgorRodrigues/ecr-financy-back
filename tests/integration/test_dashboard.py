@@ -43,7 +43,7 @@ def test_dashboard_endpoint(client, session):
             total_received=3000.00,
             issue_date=last_month,
             status="recebido",
-            account=str(acct1_id),
+            account_id=acct1_id,
             active=True
         )
     )
@@ -57,7 +57,7 @@ def test_dashboard_endpoint(client, session):
             total_received=500.00,
             issue_date=date.today(),
             status="recebido",
-            account=str(acct1_id),
+            account_id=acct1_id,
             active=True
         )
     )
@@ -72,7 +72,7 @@ def test_dashboard_endpoint(client, session):
             total_paid=1200.00,
             issue_date=last_month,
             status="pago",
-            account=str(acct1_id),
+            account_id=acct1_id,
             active=True
         )
     )
