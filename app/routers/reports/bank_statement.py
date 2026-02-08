@@ -53,7 +53,7 @@ def get_bank_statement(
     target_accounts = list(set(target_accounts))
 
     # Prepare account filters
-    # expenses/incomes table account column is Text.
+    # expenses/incomes table account column is UUID.
 
     expense_account_filter = True
     income_account_filter = True
@@ -63,10 +63,9 @@ def get_bank_statement(
         # Debug log to help identify issues
         print(f"Filtering by accounts: {target_accounts}")
 
-        account_strs = [str(aid) for aid in target_accounts]
         account_id_filter = Account.id.in_(target_accounts)
-        expense_account_filter = Expense.account.in_(account_strs)
-        income_account_filter = Income.account.in_(account_strs)
+        expense_account_filter = Expense.account.in_(target_accounts)
+        income_account_filter = Income.account.in_(target_accounts)
     else:
         print("No account filter applied (returning all accounts)")
 

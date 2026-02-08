@@ -30,7 +30,7 @@ class Income(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     document: Mapped[str | None] = mapped_column(Text, nullable=True)
     receiving_method: Mapped[str | None] = mapped_column(Text, nullable=True)
-    account: Mapped[str | None] = mapped_column(Text, nullable=True)
+    account: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     recurrence: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     competence: Mapped[str | None] = mapped_column(Text, nullable=True)
     project: Mapped[str | None] = mapped_column(Text, nullable=True)

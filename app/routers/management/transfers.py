@@ -44,7 +44,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         due_date=payload.date,
         payment_date=payload.date,
         description=description,
-        account=source_account.name,
+        account=source_account.id,
         contact_id=expense_contact_id,
         category_id=payload.category_id,
         subcategory_id=payload.subcategory_id,
@@ -68,7 +68,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         due_date=payload.date,
         receipt_date=payload.date,
         description=income_description,
-        account=destination_account.name,
+        account=destination_account.id,
         contact_id=income_contact_id,
         category_id=payload.category_id,
         subcategory_id=payload.subcategory_id,
@@ -81,6 +81,8 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
     session.add(income)
     
     # 5. Commit
+    expense_id = expense.id
+    income_id = income.id
     session.commit()
     
-    return {"message": "Transfer created successfully", "expense_id": expense.id, "income_id": income.id}
+    return {"message": "Transfer created successfully", "expense_id": expense_id, "income_id": income_id}
