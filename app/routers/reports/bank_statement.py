@@ -74,19 +74,19 @@ def get_bank_statement(
     stmt_initial = select(func.sum(Account.initial_balance)).where(
         and_(Account.active == True, account_id_filter)
     )
-    initial_balance = session.execute(stmt_initial).scalar() or Decimal(0)
+    initial_balance = Decimal(session.execute(stmt_initial).scalar() or 0)
 
     # B. Total Incomes
     stmt_incomes_total = select(func.sum(Income.total_received)).where(
         and_(Income.active == True, Income.status == "recebido", income_account_filter)
     )
-    total_incomes = session.execute(stmt_incomes_total).scalar() or Decimal(0)
+    total_incomes = Decimal(session.execute(stmt_incomes_total).scalar() or 0)
 
     # C. Total Expenses
     stmt_expenses_total = select(func.sum(Expense.total_paid)).where(
         and_(Expense.active == True, Expense.status == "pago", expense_account_filter)
     )
-    total_expenses = session.execute(stmt_expenses_total).scalar() or Decimal(0)
+    total_expenses = Decimal(session.execute(stmt_expenses_total).scalar() or 0)
 
     current_balance = float(initial_balance + total_incomes - total_expenses)
 
