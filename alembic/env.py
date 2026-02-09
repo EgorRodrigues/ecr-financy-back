@@ -57,7 +57,9 @@ def run_migrations_online():
         config.get_main_option("sqlalchemy.url"), poolclass=pool.NullPool, future=True
     )
 
-    target_schema = os.environ.get("TARGET_SCHEMA")
+    target_schema = config.attributes.get("target_schema")
+    if not target_schema:
+        target_schema = os.environ.get("TARGET_SCHEMA")
 
     with connectable.connect() as connection:
         if target_schema:

@@ -1,10 +1,12 @@
+import os
 from urllib.parse import quote_plus
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
-from app.db.base import Base
 
 _engine = None
 
@@ -50,10 +52,14 @@ def ensure_tenant_schema(schema_name: str):
             connection.execute(text(f"CREATE SCHEMA {schema_name}"))
             connection.commit()
 
-            # Set search path for this connection to create tables
-            connection.execute(text(f"SET search_path TO {schema_name}"))
-            Base.metadata.create_all(connection)
-            connection.commit()
+            # Run Alembic migrations to create tables
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            alembic_ini_path = os.path.join(base_dir, "alembic.ini")
+            alembic_cfg = Config(alembic_ini_path)
+            alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
+            alembic_cfg.attributes["target_schema"] = schema_name
+
+            command.upgrade(alembic_cfg, "head")
 
 
 def connect_postgres(settings_obj=None):
