@@ -34,7 +34,7 @@ def create_expense(session: Session, data: ExpenseCreate) -> ExpenseOut:
 
 def list_expenses(
     session: Session,
-    limit: int = 50,
+    limit: int,
     account: str | None = None,
     account_type: str | None = None,
     status: str | None = None,
