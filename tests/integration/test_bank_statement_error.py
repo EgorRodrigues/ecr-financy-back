@@ -69,8 +69,8 @@ def test_bank_statement_total_incomes_error(client, session):
     # 6. Test with Filter for non-existent account (or other account)
     other_account_id = uuid4()
     response_other = client.get(f"/bank-statement/?account_id={other_account_id}")
-    assert response_other.status_code == 200
-    data_other = response_other.json()
-    # Balance should be 0 (no initial balance for random id, no transactions)
-    assert data_other["account_balance"] == 0.0
+    
+    # Expect 404 because the account does not exist
+    assert response_other.status_code == 404
+    assert response_other.json()["detail"] == "Account not found"
 

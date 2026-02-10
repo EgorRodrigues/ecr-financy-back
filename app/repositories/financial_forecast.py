@@ -85,6 +85,19 @@ def get_financial_forecast(
         else_=Income.amount,
     )
 
+    # Dialect check for UUID join compatibility
+    bind = session.get_bind()
+    is_sqlite = bind.dialect.name == "sqlite"
+
+    if is_sqlite:
+        # Keep existing behavior for SQLite if it was working/intended
+        join_cond_inc = Income.category_id == cast(Category.id, Text)
+        join_cond_exp = Expense.category_id == cast(Category.id, Text)
+    else:
+        # Postgres: UUID = UUID
+        join_cond_inc = Income.category_id == Category.id
+        join_cond_exp = Expense.category_id == Category.id
+
     stmt_incomes = (
         select(
             Income.id,
@@ -93,7 +106,7 @@ def get_financial_forecast(
             Income.status,
             Category.name.label("category_name"),
         )
-        .outerjoin(Category, Income.category_id == cast(Category.id, Text))
+        .outerjoin(Category, join_cond_inc)
         .where(
             and_(
                 Income.status.in_(["pendente", "recebido"]),
@@ -149,7 +162,7 @@ def get_financial_forecast(
             Expense.status,
             Category.name.label("category_name"),
         )
-        .outerjoin(Category, Expense.category_id == cast(Category.id, Text))
+        .outerjoin(Category, join_cond_exp)
         .where(
             and_(
                 Expense.status.in_(["pendente", "pago"]),
