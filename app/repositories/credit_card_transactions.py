@@ -92,7 +92,7 @@ def create_credit_card_transaction(
     
     new_transaction = CreditCardTransaction(**transaction_data)
     session.add(new_transaction)
-    session.flush()
+    session.commit()
     session.refresh(new_transaction)
     
     return CreditCardTransactionOut.model_validate(new_transaction)
@@ -226,5 +226,5 @@ def delete_credit_card_transaction(session: Session, eid: UUID) -> bool:
         update_invoice_amount(session, current.invoice_id, -Decimal(str(current.amount)))
 
     session.delete(current)
-    session.flush()
+    session.commit()
     return True
