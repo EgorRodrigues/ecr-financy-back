@@ -49,8 +49,15 @@ def get_credit_card_summary(session: Session, account_id: UUID) -> CreditCardSum
 
     transactions_out = [CreditCardTransactionOut.model_validate(row) for row in rows]
 
-    total_spent = sum(t.amount for t in transactions_out if t.status != "cancelado")
-    available_limit = total_limit - total_spent
+    # Calculate used limit based on Open/Closed Invoices (not Paid)
+    # User requested: available_limit = total_limit - sum(invoices where status != 'paid')
+    stmt_invoices = select(func.sum(CreditCardInvoice.amount)).where(
+        CreditCardInvoice.account_id == account_id,
+        CreditCardInvoice.status != "paid"
+    )
+    used_limit = session.scalar(stmt_invoices) or Decimal("0")
+    
+    available_limit = total_limit - used_limit
 
     current_invoice, next_invoices = get_account_invoices_summary(session, account_id)
 
