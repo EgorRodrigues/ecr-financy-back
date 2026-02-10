@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.accounts import Account
 from app.models.credit_card_transactions import CreditCardTransaction
+from app.models.credit_card_invoices import CreditCardInvoice
 from app.schemas.credit_card_transactions import (
     CreditCardSummary,
     CreditCardTransactionCreate,
@@ -154,15 +155,8 @@ def update_credit_card_transaction(
     recalc_invoice = False
 
     # Check triggers for invoice recalculation
-    if (
-        ("due_date" in update_dict and new_due_date != current.due_date)
-        or (
-            "issue_date" in update_dict
-            and new_issue_date != current.issue_date
-            and new_due_date is None
-        )
-        or ("account_id" in update_dict and new_account_id != current.account_id)
-    ):
+    # Only recalculate invoice if account changes. Date changes should NOT trigger invoice change.
+    if "account_id" in update_dict and new_account_id != current.account_id:
         recalc_invoice = True
 
     if recalc_invoice and new_account_id and new_issue_date is not None:
@@ -212,6 +206,39 @@ def update_credit_card_transaction(
     session.add(current)
     session.commit()
     session.refresh(current)
+    return CreditCardTransactionOut.model_validate(current)
+
+
+def transfer_transaction_invoice(
+    session: Session, transaction_id: UUID, new_invoice_id: UUID
+) -> CreditCardTransactionOut | None:
+    current = session.get(CreditCardTransaction, transaction_id)
+    if not current:
+        return None
+
+    new_invoice = session.get(CreditCardInvoice, new_invoice_id)
+    if not new_invoice:
+        raise ValueError("Target invoice not found")
+
+    if current.invoice_id == new_invoice_id:
+        return CreditCardTransactionOut.model_validate(current)
+
+    # 1. Deduct from old invoice (if active)
+    if current.invoice_id and current.status != "cancelado":
+        update_invoice_amount(session, current.invoice_id, -Decimal(str(current.amount)))
+
+    # 2. Add to new invoice (if active)
+    if current.status != "cancelado":
+        update_invoice_amount(session, new_invoice_id, Decimal(str(current.amount)))
+
+    # 3. Update transaction
+    current.invoice_id = new_invoice_id
+    current.updated_at = datetime.now(UTC)
+
+    session.add(current)
+    session.commit()
+    session.refresh(current)
+
     return CreditCardTransactionOut.model_validate(current)
 
 

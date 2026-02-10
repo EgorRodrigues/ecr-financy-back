@@ -9,6 +9,7 @@ from app.schemas.credit_card_transactions import (
     CreditCardTransactionCreate,
     CreditCardTransactionOut,
     CreditCardTransactionUpdate,
+    CreditCardTransactionTransfer,
 )
 from app.repositories.credit_card_transactions import (
     create_credit_card_transaction,
@@ -17,6 +18,7 @@ from app.repositories.credit_card_transactions import (
     get_credit_card_transaction,
     list_credit_card_transactions,
     update_credit_card_transaction,
+    transfer_transaction_invoice,
 )
 
 router = APIRouter()
@@ -61,6 +63,19 @@ def update(
     if not item:
         raise HTTPException(status_code=404, detail="Credit Card Transaction not found")
     return item
+
+
+@router.post("/{transaction_id}/transfer", response_model=CreditCardTransactionOut)
+def transfer(
+    transaction_id: UUID, payload: CreditCardTransactionTransfer, session: Session = Depends(get_db)
+):
+    try:
+        item = transfer_transaction_invoice(session, transaction_id, payload.new_invoice_id)
+        if not item:
+            raise HTTPException(status_code=404, detail="Credit Card Transaction not found")
+        return item
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{transaction_id}")

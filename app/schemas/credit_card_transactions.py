@@ -66,6 +66,10 @@ class CreditCardTransactionUpdate(BaseModel):
     active: bool | None = None
 
 
+class CreditCardTransactionTransfer(BaseModel):
+    new_invoice_id: UUID
+
+
 class CreditCardTransactionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
