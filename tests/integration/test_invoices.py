@@ -5,11 +5,22 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.models.accounts import Account
+from app.models.contacts import Contact
 from app.repositories.credit_card_invoices import ensure_invoice_for_transaction
 
 
 @pytest.fixture
 def test_account(session):
+    contact_id = uuid4()
+    session.add(
+        Contact(
+            id=contact_id,
+            name="Bank Contact",
+            type="supplier",
+            person_type="company",
+            active=True,
+        )
+    )
     account_id = uuid4()
     session.add(
         Account(
@@ -18,6 +29,7 @@ def test_account(session):
             type="credit_card",
             closing_day=1,
             due_day=8,
+            contact_id=contact_id,
             active=True,
         )
     )
@@ -67,12 +79,18 @@ def test_invoice_reuse(session, test_account):
 
 
 def test_credit_card_invoice_routes_accessible(client: TestClient):
+    # Create Contact first
+    con_res = client.post("/contacts/", json={"name": "Bank Contact", "type": "supplier", "person_type": "company"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     acc_payload = {
         "name": "HTTP Invoice Account",
         "type": "credit_card",
         "closing_day": 1,
         "due_day": 8,
         "available_limit": 1000.0,
+        "contact_id": contact_id,
     }
     acc_res = client.post("/accounts/", json=acc_payload)
     assert acc_res.status_code == 200

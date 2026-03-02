@@ -37,6 +37,11 @@ def test_bank_statement_future_transactions(client: TestClient):
     # Create account
     r_acc = client.post("/accounts/", json={"name": "Future Acc", "type": "bank", "initial_balance": 0})
     aid = r_acc.json()["id"]
+
+    # Create Contact
+    con_res = client.post("/contacts/", json={"name": "Test Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
     
     # Create Income in future (recebido? usually future is pendente)
     # If we mark it 'recebido' in future, it technically affects balance if the logic doesn't filter by date <= today
@@ -49,8 +54,10 @@ def test_bank_statement_future_transactions(client: TestClient):
         "total_received": 100,
         "status": "recebido",
         "receipt_date": future_date,
+        "issue_date": future_date,
         "description": "Future Money",
-        "account_id": aid
+        "account_id": aid,
+        "contact_id": contact_id
     })
     
     # Query Statement for Today

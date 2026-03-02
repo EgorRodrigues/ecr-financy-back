@@ -5,12 +5,23 @@ from fastapi.testclient import TestClient
 
 # --- Incomes ---
 def test_income_lifecycle(client: TestClient):
+    # Create Account and Contact first
+    acc_res = client.post("/accounts/", json={"name": "Bank Account", "type": "bank"})
+    assert acc_res.status_code == 200
+    account_id = acc_res.json()["id"]
+
+    con_res = client.post("/contacts/", json={"name": "Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     # Create
     payload = {
         "amount": 5000,
         "description": "Salary",
         "status": "recebido",
         "issue_date": str(date.today()),
+        "account_id": account_id,
+        "contact_id": contact_id,
     }
     res = client.post("/incomes/", json=payload)
     assert res.status_code == 200
@@ -33,12 +44,23 @@ def test_income_lifecycle(client: TestClient):
 
 # --- Expenses ---
 def test_expense_lifecycle(client: TestClient):
+    # Create Account and Contact first
+    acc_res = client.post("/accounts/", json={"name": "Bank Account", "type": "bank"})
+    assert acc_res.status_code == 200
+    account_id = acc_res.json()["id"]
+
+    con_res = client.post("/contacts/", json={"name": "Contact", "type": "supplier", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     # Create
     payload = {
         "amount": 100,
         "description": "Groceries",
         "status": "pago",
         "issue_date": str(date.today()),
+        "account_id": account_id,
+        "contact_id": contact_id,
     }
     res = client.post("/expenses/", json=payload)
     assert res.status_code == 200

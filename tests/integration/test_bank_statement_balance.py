@@ -11,6 +11,11 @@ def test_bank_statement_balance_persistence(client: TestClient):
     )
     aid = r_acc.json()["id"]
 
+    # 1.5 Create Contact
+    con_res = client.post("/contacts/", json={"name": "Test Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     # 2. Add Income (Yesterday)
     yesterday = (date.today() - timedelta(days=1)).isoformat()
     client.post(
@@ -20,8 +25,10 @@ def test_bank_statement_balance_persistence(client: TestClient):
             "total_received": 500.00,
             "status": "recebido",
             "receipt_date": yesterday,
+            "issue_date": yesterday,
             "description": "Old Income",
             "account_id": aid,
+            "contact_id": contact_id,
             "active": True,
         },
     )

@@ -3,9 +3,22 @@ from uuid import uuid4
 from decimal import Decimal
 from sqlalchemy import text
 from app.models.accounts import Account
+from app.models.contacts import Contact
 from app.models.incomes import Income
 
 def test_bank_statement_total_incomes_error(client, session):
+    # 0. Setup Contact
+    contact_id = uuid4()
+    session.add(
+        Contact(
+            id=contact_id,
+            name="Test Contact",
+            type="customer",
+            person_type="individual",
+            active=True
+        )
+    )
+
     # 1. Setup Account
     account_id = uuid4()
     session.add(
@@ -29,6 +42,7 @@ def test_bank_statement_total_incomes_error(client, session):
             issue_date=date.today(),
             status="recebido",
             account_id=account_id,
+            contact_id=contact_id,
             active=True
         )
     )
@@ -43,6 +57,7 @@ def test_bank_statement_total_incomes_error(client, session):
             issue_date=date.today(),
             status="pendente",
             account_id=account_id,
+            contact_id=contact_id,
             active=True
         )
     )
