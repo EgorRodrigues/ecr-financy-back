@@ -1,10 +1,9 @@
 import io
 from fastapi.testclient import TestClient
 from app.main import app
+import pytest
 
-client = TestClient(app)
-
-def test_import_ofx():
+def test_import_ofx(client: TestClient):
     ofx_content = """OFXHEADER:100
 DATA:OFXSGML
 VERSION:102
@@ -69,6 +68,9 @@ NEWFILEUID:NONE
     file = ("test.ofx", ofx_content.encode("utf-8"), "application/x-ofx")
     response = client.post("/reconciliation/import-ofx", files={"file": file})
     
+    if response.status_code != 200:
+        print(f"Error Response: {response.json()}")
+
     assert response.status_code == 200
     data = response.json()
     assert len(data["transactions"]) == 2
@@ -76,5 +78,6 @@ NEWFILEUID:NONE
     assert data["transactions"][0]["memo"] == "TEST DEBIT"
     assert data["transactions"][1]["amount"] == 200.0
     assert data["transactions"][1]["memo"] == "TEST CREDIT"
+    assert data["transactions"][0]["bank_id"] == "033"
     assert data["account_id"] == "123456789"
     assert data["balance"] == 1000.0
