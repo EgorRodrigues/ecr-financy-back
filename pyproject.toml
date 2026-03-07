@@ -17,6 +17,8 @@ sqlalchemy = "^2.0.36"
 psycopg = "^3.2.3"
 alembic = "^1.13.2"
 pyjwt = "^2.10.1"
+ofxparse = "^0.21"
+python-multipart = "^0.0.22"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.1"

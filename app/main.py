@@ -17,6 +17,7 @@ from app.routers.management.incomes import router as incomes_router
 from app.routers.management.subcategories import router as subcategories_router
 from app.routers.management.transfers import router as transfers_router
 from app.routers.reports.dashboard import router as dashboard_router
+from app.routers.management.reconciliation import router as reconciliation_router
 
 
 @asynccontextmanager
@@ -69,3 +70,4 @@ app.include_router(
 )
 app.include_router(transfers_router, prefix="/transfers", tags=["transfers"])
 app.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
+app.include_router(reconciliation_router, prefix="/reconciliation", tags=["reconciliation"])
