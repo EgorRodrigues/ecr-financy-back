@@ -42,3 +42,6 @@ class Expense(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
+    reconciled: Mapped[bool] = mapped_column(Boolean, default=False)
+    reconciliation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    reconciled_by: Mapped[str | None] = mapped_column(Text, nullable=True)

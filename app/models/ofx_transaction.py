@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Date, Integer
+from sqlalchemy import Boolean, Column, String, Float, Date, Integer
 from app.db.base import Base
 
 class OFXTransaction(Base):
@@ -12,3 +12,6 @@ class OFXTransaction(Base):
     type = Column(String)
     bank_id = Column(String)
     account_id = Column(String)
+    reconciled = Column(Boolean, default=False)
+    reconciliation_date = Column(Date, nullable=True)
+    reconciled_by = Column(String, nullable=True)
