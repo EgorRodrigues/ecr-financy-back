@@ -2,11 +2,13 @@ from datetime import date
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class OFXTransaction(BaseModel):
-    id: str
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
     amount: float
     date: date
     memo: str
@@ -19,6 +21,8 @@ class OFXTransaction(BaseModel):
 
 
 class OFXImportResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     transactions: list[OFXTransaction]
     account_id: str | None = None
     currency: str | None = None
@@ -27,20 +31,21 @@ class OFXImportResponse(BaseModel):
 
 
 class ReconciliationMatch(BaseModel):
-    ofx_transaction_id: str
+    model_config = ConfigDict(from_attributes=True)
+
+    ofx_transaction_id: int
     matched_transaction_id: UUID | None = None
     match_type: Literal["exact", "partial", "none"] = "none"
     score: float = 0.0
 
 class Income(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     amount: float
     description: str
     due_date: date | None = None
     reconciled: bool = False
-
-    class Config:
-        orm_mode = True
 
 class ReconciliationMatchInput(BaseModel):
     ofx_transaction_id: int
@@ -48,11 +53,10 @@ class ReconciliationMatchInput(BaseModel):
     transaction_type: Literal["income", "expense"]
 
 class Expense(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     amount: float
     description: str
     due_date: date | None = None
     reconciled: bool = False
-
-    class Config:
-        orm_mode = True
