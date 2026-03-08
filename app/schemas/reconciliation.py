@@ -43,8 +43,10 @@ class Income(BaseModel):
 
     id: UUID
     amount: float
+    total_received: float | None = None
     description: str
     due_date: date | None = None
+    receipt_date: date | None = None
     reconciled: bool = False
 
 class ReconciliationMatchInput(BaseModel):
@@ -57,6 +59,8 @@ class Expense(BaseModel):
 
     id: UUID
     amount: float
+    total_paid: float | None = None
     description: str
     due_date: date | None = None
+    payment_date: date | None = None
     reconciled: bool = False
