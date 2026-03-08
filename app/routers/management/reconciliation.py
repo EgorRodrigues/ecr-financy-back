@@ -79,8 +79,7 @@ def get_unreconciled_transactions(
     return {"incomes": incomes, "expenses": expenses}
 
 
-@router.post("/reconcile-transactions")
-def reconcile_transactions(match_input: ReconciliationMatchInput, db: Session = Depends(get_db)):
+def _process_reconciliation(match_input: ReconciliationMatchInput, db: Session):
     # 1. Buscar todas as transações OFX
     ofx_transactions = db.query(OFXTransaction).filter(OFXTransaction.id.in_(match_input.ofx_transaction_ids)).all()
     if len(ofx_transactions) != len(match_input.ofx_transaction_ids):
@@ -95,20 +94,15 @@ def reconcile_transactions(match_input: ReconciliationMatchInput, db: Session = 
     if len(transactions) != len(match_input.transaction_ids):
         raise HTTPException(status_code=404, detail=f"Uma ou mais transações do tipo {match_input.transaction_type} não foram encontradas")
 
-    # 3. Validar se os totais batem (opcional, mas recomendado para integridade)
+    # 3. Validar se os totais batem
     ofx_total = sum(t.amount for t in ofx_transactions)
     
     if match_input.transaction_type == "income":
-        # Para receitas, usamos total_received (deve ser positivo no sistema, mas no OFX depende do sinal)
         system_total = sum((t.total_received or t.amount) for t in transactions)
     else:
-        # Para despesas, usamos total_paid (no sistema é positivo, no OFX geralmente é negativo)
         system_total = sum((t.total_paid or t.amount) for t in transactions)
 
-    # Nota: No OFX, débitos são negativos e créditos positivos. 
-    # No sistema, ambos os valores de total_paid/total_received são armazenados como positivos.
-    # Precisamos garantir que a comparação ignore o sinal ou trate adequadamente.
-    if abs(abs(ofx_total) - abs(system_total)) > 0.01: # Tolerância de 1 centavo para arredondamentos
+    if abs(abs(ofx_total) - abs(system_total)) > 0.01:
          raise HTTPException(
              status_code=400, 
              detail=f"Os valores não batem. Total OFX: {ofx_total:.2f}, Total Sistema: {system_total:.2f}"
@@ -116,25 +110,17 @@ def reconcile_transactions(match_input: ReconciliationMatchInput, db: Session = 
 
     today = date.today()
     
-    # 4. Criar os registros de reconciliação (N:M)
-    # Para suportar 1:N, N:1 ou N:M, cada par (OFX, Sistema) deve ser registrado?
-    # Ou registramos a associação em lote? 
-    # A estrutura atual da tabela 'reconciliations' é (ofx_id, transaction_id).
-    # Para 1:N (1 OFX -> 2 Incomes), teremos 2 linhas: (OFX1, Inc1), (OFX1, Inc2).
-    # Para N:1 (2 OFX -> 1 Income), teremos 2 linhas: (OFX1, Inc1), (OFX2, Inc1).
-    
+    # 4. Criar os registros de reconciliação
     for ofx in ofx_transactions:
         ofx.reconciled = True
         ofx.reconciliation_date = today
-        ofx.reconciled_by = "user_id" # TODO: Pegar do auth
+        ofx.reconciled_by = "user_id"
 
         for sys_trans in transactions:
-            # Marcamos a transação do sistema como reconciliada
             sys_trans.reconciled = True
             sys_trans.reconciliation_date = today
             sys_trans.reconciled_by = "user_id"
 
-            # Criamos o vínculo na tabela de reconciliação
             reconciliation = Reconciliation(
                 ofx_transaction_id=ofx.id,
                 transaction_id=str(sys_trans.id),
@@ -144,6 +130,18 @@ def reconcile_transactions(match_input: ReconciliationMatchInput, db: Session = 
             )
             db.add(reconciliation)
 
-    db.commit()
 
-    return {"message": f"Reconciliação concluída: {len(ofx_transactions)} transações OFX vinculadas a {len(transactions)} transações do sistema."}
+@router.post("/reconcile-transactions")
+def reconcile_transactions(match_input: ReconciliationMatchInput, db: Session = Depends(get_db)):
+    _process_reconciliation(match_input, db)
+    db.commit()
+    return {"message": "Reconciliação concluída com sucesso."}
+
+
+@router.post("/reconcile-batch-transactions")
+def reconcile_batch_transactions(match_list: list[ReconciliationMatchInput], db: Session = Depends(get_db)):
+    for match_input in match_list:
+        _process_reconciliation(match_input, db)
+    
+    db.commit()
+    return {"message": f"Reconciliação em lote concluída: {len(match_list)} grupos de transações processados."}
