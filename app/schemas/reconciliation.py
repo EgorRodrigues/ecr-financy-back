@@ -48,8 +48,8 @@ class Income(BaseModel):
     reconciled: bool = False
 
 class ReconciliationMatchInput(BaseModel):
-    ofx_transaction_id: int
-    transaction_id: UUID
+    ofx_transaction_ids: list[int]
+    transaction_ids: list[UUID]
     transaction_type: Literal["income", "expense"]
 
 class Expense(BaseModel):
