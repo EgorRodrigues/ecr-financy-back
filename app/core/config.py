@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     postgres_username: str | None = "postgres"
     postgres_password: str | None = "postgres"
 
+    environment: str = "production"
+
     jwt_secret_key: str = "seu-segredo-super-seguro"
     jwt_algorithm: str = "HS256"
 

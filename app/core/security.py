@@ -7,10 +7,19 @@ from app.core.config import settings
 security = HTTPBearer()
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
+def decode_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        options = {}
+        if settings.environment == "dev":
+            options["verify_exp"] = False
+            options["verify_alg"] = False
+
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options=options,
+        )
         return payload
     except jwt.ExpiredSignatureError as e:
         raise HTTPException(
@@ -24,3 +33,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
+
+
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    return decode_token(token)

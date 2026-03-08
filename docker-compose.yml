@@ -11,6 +11,7 @@ services:
       - APP_POSTGRES_DATABASE=financy_db
       - APP_POSTGRES_USERNAME=postgres
       - APP_POSTGRES_PASSWORD=postgres
+      - APP_ENVIRONMENT=dev
     depends_on:
       postgres:
         condition: service_healthy
