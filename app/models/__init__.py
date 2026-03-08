@@ -7,4 +7,5 @@ from app.models.credit_card_transactions import CreditCardTransaction
 from app.models.expenses import Expense
 from app.models.incomes import Income
 from app.models.ofx_transaction import OFXTransaction
+from app.models.reconciliation import Reconciliation
 from app.models.subcategories import Subcategory

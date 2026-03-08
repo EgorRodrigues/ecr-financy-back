@@ -98,11 +98,11 @@ def _process_reconciliation(match_input: ReconciliationMatchInput, db: Session):
     ofx_total = sum(t.amount for t in ofx_transactions)
     
     if match_input.transaction_type == "income":
-        system_total = sum((t.total_received or t.amount) for t in transactions)
+        system_total = sum(float(t.total_received or t.amount) for t in transactions)
     else:
-        system_total = sum((t.total_paid or t.amount) for t in transactions)
+        system_total = sum(float(t.total_paid or t.amount) for t in transactions)
 
-    if abs(abs(ofx_total) - abs(system_total)) > 0.01:
+    if abs(abs(float(ofx_total)) - abs(system_total)) > 0.01:
          raise HTTPException(
              status_code=400, 
              detail=f"Os valores não batem. Total OFX: {ofx_total:.2f}, Total Sistema: {system_total:.2f}"
