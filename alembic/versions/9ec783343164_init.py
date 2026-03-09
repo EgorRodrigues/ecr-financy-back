@@ -1,15 +1,16 @@
 """init
 
-Revision ID: 084bd92b3d11
+Revision ID: 9ec783343164
 Revises: 
-Create Date: 2026-03-09 12:25:20.223458
+Create Date: 2026-03-09 14:12:52.027391
 """
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
+
 from app.db.base import CustomArray
 
-revision: str = '084bd92b3d11'
+revision: str = '9ec783343164'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -192,9 +193,10 @@ def upgrade() -> None:
     sa.Column('reconciled', sa.Boolean(), nullable=True),
     sa.Column('reconciliation_date', sa.Date(), nullable=True),
     sa.Column('reconciled_by', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('fitid', 'bank_id', 'account_id', name='_fitid_bank_account_uc')
     )
-    op.create_index(op.f('ix_ofx_transactions_fitid'), 'ofx_transactions', ['fitid'], unique=True)
+    op.create_index(op.f('ix_ofx_transactions_fitid'), 'ofx_transactions', ['fitid'], unique=False)
     op.create_index(op.f('ix_ofx_transactions_id'), 'ofx_transactions', ['id'], unique=False)
     op.create_table('subcategories',
     sa.Column('id', sa.UUID(), nullable=False),

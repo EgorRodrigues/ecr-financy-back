@@ -21,9 +21,10 @@ class OFXService:
             bank_id = getattr(account.institution, "fid", None)
 
         saved_transactions = []
+        account_id = getattr(account, "number", None)
         for tx in statement.transactions:
-            # Lidar com transações duplicadas
-            if self.repo.get_by_fitid(tx.id):
+            # Lidar com transações duplicadas de forma robusta (FITID + Banco + Conta)
+            if self.repo.get_existing_transaction(tx.id, bank_id, account_id):
                 continue  # Pular transação se ela já existir
 
             transaction_schema = OFXTransaction(
@@ -33,14 +34,14 @@ class OFXService:
                 memo=tx.memo,
                 type=tx.type,
                 bank_id=bank_id,
-                account_id=getattr(account, "number", None),
+                account_id=account_id,
             )
             self.repo.create_ofx_transaction(transaction_schema)
             saved_transactions.append(transaction_schema)
 
         return OFXImportResponse(
             transactions=saved_transactions,
-            account_id=getattr(account, "number", None),
+            account_id=account_id,
             currency=getattr(statement, "currency", None),
             balance=float(statement.balance) if hasattr(statement, "balance") else None,
             balance_date=statement.balance_date.date()

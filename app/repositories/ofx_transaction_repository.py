@@ -6,8 +6,13 @@ class OFXTransactionRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def get_by_fitid(self, fitid: str) -> OFXTransaction | None:
-        return self.session.query(OFXTransaction).filter(OFXTransaction.fitid == fitid).first()
+    def get_existing_transaction(self, fitid: str, bank_id: str | None, account_id: str | None) -> OFXTransaction | None:
+        query = self.session.query(OFXTransaction).filter(OFXTransaction.fitid == fitid)
+        if bank_id:
+            query = query.filter(OFXTransaction.bank_id == bank_id)
+        if account_id:
+            query = query.filter(OFXTransaction.account_id == account_id)
+        return query.first()
 
     def create_ofx_transaction(self, transaction: OFXTransactionSchema) -> OFXTransaction:
         db_transaction = OFXTransaction(
