@@ -16,7 +16,7 @@ class OFXTransactionRepository:
 
     def create_ofx_transaction(self, transaction: OFXTransactionSchema) -> OFXTransaction:
         db_transaction = OFXTransaction(
-            fitid=transaction.id,  # Mapeando o 'id' do schema para 'fitid' no modelo
+            fitid=transaction.fitid,  # Agora usando explicitamente fitid
             amount=transaction.amount,
             date=transaction.date,
             memo=transaction.memo,

@@ -28,7 +28,7 @@ class OFXService:
                 continue  # Pular transação se ela já existir
 
             transaction_schema = OFXTransaction(
-                id=tx.id,
+                fitid=tx.id,  # FITID do banco
                 amount=float(tx.amount),
                 date=tx.date.date(),
                 memo=tx.memo,

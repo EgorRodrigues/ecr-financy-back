@@ -8,7 +8,8 @@ from pydantic import BaseModel, ConfigDict
 class OFXTransaction(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: int | None = None
+    fitid: str | None = None
     amount: float
     date: date
     memo: str
