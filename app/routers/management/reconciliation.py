@@ -38,7 +38,10 @@ def get_unreconciled_ofx_transactions(
     end_date: date | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(OFXTransaction).filter(OFXTransaction.reconciled == False)
+    query = db.query(OFXTransaction).filter(
+        OFXTransaction.reconciled == False,
+        OFXTransaction.active == True
+    )
 
     if start_date:
         query = query.filter(OFXTransaction.date >= start_date)
@@ -77,6 +80,17 @@ def get_unreconciled_transactions(
     incomes = income_query.all()
     expenses = expense_query.all()
     return {"incomes": incomes, "expenses": expenses}
+
+
+@router.patch("/ofx-transactions/{transaction_id}/deactivate")
+def deactivate_ofx_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    transaction = db.query(OFXTransaction).filter(OFXTransaction.id == transaction_id).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transação OFX não encontrada")
+    
+    transaction.active = False
+    db.commit()
+    return {"message": "Transação OFX desativada com sucesso"}
 
 
 def _process_reconciliation(match_input: ReconciliationMatchInput, db: Session):

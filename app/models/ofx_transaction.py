@@ -13,6 +13,7 @@ class OFXTransaction(Base):
     bank_id = Column(String)
     account_id = Column(String)
     reconciled = Column(Boolean, default=False)
+    active = Column(Boolean, default=True, nullable=False)
     reconciliation_date = Column(Date, nullable=True)
     reconciled_by = Column(String, nullable=True)
 

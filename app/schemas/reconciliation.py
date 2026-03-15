@@ -17,6 +17,7 @@ class OFXTransaction(BaseModel):
     bank_id: str | None = None
     account_id: str | None = None
     reconciled: bool = False
+    active: bool = True
     reconciliation_date: date | None = None
     reconciled_by: str | None = None
 
