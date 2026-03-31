@@ -34,7 +34,7 @@ def get_db(
     ensure_tenant_schema(schema_name)
 
     engine = get_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
     session = SessionLocal()
 
     try:

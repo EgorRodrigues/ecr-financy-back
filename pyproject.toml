@@ -1,30 +1,39 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
 name = "ecr-financy-back"
 version = "0.1.0"
 description = "Backend FastAPI para Controle Financeiro"
-authors = ["Egor Rodrigues <me@egor.soy>"]
-packages = [{ include = "app" }]
+authors = [{name = "Egor Rodrigues", email = "me@egor.soy"}]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.123.5",
+    "uvicorn[standard]>=0.38.0",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "python-dotenv>=1.2.1",
+    "httpx>=0.28.1",
+    "sqlalchemy>=2.0.36",
+    "psycopg>=3.2.3",
+    "alembic>=1.13.2",
+    "pyjwt>=2.10.1",
+    "ofxparse>=0.21",
+    "python-multipart>=0.0.22",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-fastapi = "^0.123.5"
-uvicorn = {version = "^0.38.0", extras = ["standard"]}
-pydantic = "^2.12.5"
-pydantic-settings = "^2.12.0"
-python-dotenv = "^1.2.1"
-httpx = "^0.28.1"
-sqlalchemy = "^2.0.36"
-psycopg = "^3.2.3"
-alembic = "^1.13.2"
-pyjwt = "^2.10.1"
-ofxparse = "^0.21"
-python-multipart = "^0.0.22"
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.1",
+    "ruff>=0.14.7",
+    "mypy>=1.19.0",
+    "taskipy>=1.14.1",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^9.0.1"
-ruff = "^0.14.7"
-mypy = "^1.19.0"
-taskipy = "^1.14.1"
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [tool.ruff]
 line-length = 100
@@ -50,10 +59,6 @@ disable_error_code = ["import-untyped"]
 [[tool.mypy.overrides]]
 module = "cassandra.*"
 ignore_missing_imports = true
-
-[tool.poetry.scripts]
-serve = "uvicorn:main"
-seed-basics = "app.scripts.seed_basics:main"
 
 [tool.taskipy.tasks]
 lint = 'ruff check .'

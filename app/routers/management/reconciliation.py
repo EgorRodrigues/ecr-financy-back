@@ -2,6 +2,7 @@ from datetime import date
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.services.ofx_service import OFXService
+from app.repositories.ofx_transaction_repository import OFXTransactionRepository
 from app.dependencies import get_db
 from app.models.ofx_transaction import OFXTransaction
 from app.models.incomes import Income
@@ -38,18 +39,8 @@ def get_unreconciled_ofx_transactions(
     end_date: date | None = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(OFXTransaction).filter(
-        OFXTransaction.reconciled == False,
-        OFXTransaction.active == True
-    )
-
-    if start_date:
-        query = query.filter(OFXTransaction.date >= start_date)
-
-    if end_date:
-        query = query.filter(OFXTransaction.date <= end_date)
-
-    return query.all()
+    repo = OFXTransactionRepository(db)
+    return repo.get_unreconciled_active(start_date, end_date)
 
 
 @router.get("/unreconciled-transactions", response_model=dict[str, list[IncomeSchema] | list[ExpenseSchema]])
@@ -84,20 +75,20 @@ def get_unreconciled_transactions(
 
 @router.patch("/ofx-transactions/{transaction_id}/deactivate")
 def deactivate_ofx_transaction(transaction_id: int, db: Session = Depends(get_db)):
-    transaction = db.query(OFXTransaction).filter(OFXTransaction.id == transaction_id).first()
+    repo = OFXTransactionRepository(db)
+    transaction = repo.deactivate(transaction_id)
     if not transaction:
         raise HTTPException(status_code=404, detail="Transação OFX não encontrada")
     
-    transaction.active = False
-    db.commit()
     return {"message": "Transação OFX desativada com sucesso"}
 
 
 def _process_reconciliation(match_input: ReconciliationMatchInput, db: Session):
-    # 1. Buscar todas as transações OFX
-    ofx_transactions = db.query(OFXTransaction).filter(OFXTransaction.id.in_(match_input.ofx_transaction_ids)).all()
+    # 1. Buscar todas as transações OFX ativas
+    repo = OFXTransactionRepository(db)
+    ofx_transactions = repo.get_by_ids_active(match_input.ofx_transaction_ids)
     if len(ofx_transactions) != len(match_input.ofx_transaction_ids):
-        raise HTTPException(status_code=404, detail="Uma ou mais transações OFX não foram encontradas")
+        raise HTTPException(status_code=404, detail="Uma ou mais transações OFX ativas não foram encontradas")
 
     # 2. Buscar todas as transações do sistema (Income ou Expense)
     if match_input.transaction_type == "income":
