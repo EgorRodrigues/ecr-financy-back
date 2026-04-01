@@ -28,7 +28,6 @@ def create_expense(session: Session, data: ExpenseCreate) -> ExpenseOut:
     )
     session.add(db_expense)
     session.commit()
-    session.refresh(db_expense)
     return ExpenseOut.model_validate(db_expense)
 
 
@@ -87,7 +86,6 @@ def update_expense(session: Session, eid: UUID, data: ExpenseUpdate) -> ExpenseO
 
     db_expense.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_expense)
     return ExpenseOut.model_validate(db_expense)
 
 

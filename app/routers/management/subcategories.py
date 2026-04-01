@@ -25,7 +25,7 @@ def create(payload: SubcategoryCreate, session: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[SubcategoryOut])
-def list_all(limit: int = 50, session: Session = Depends(get_db)):
+def list_all(limit: int = 100, session: Session = Depends(get_db)):
     return list_all_subcategories(session, limit)
 
 

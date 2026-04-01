@@ -27,7 +27,6 @@ def create_income(session: Session, data: IncomeCreate) -> IncomeOut:
     )
     session.add(db_income)
     session.commit()
-    session.refresh(db_income)
     return IncomeOut.model_validate(db_income)
 
 
@@ -77,7 +76,6 @@ def update_income(session: Session, iid: UUID, data: IncomeUpdate) -> IncomeOut 
 
     db_income.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_income)
     return IncomeOut.model_validate(db_income)
 
 

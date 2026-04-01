@@ -216,7 +216,6 @@ def update_credit_card_transaction(
     current.updated_at = datetime.now(UTC)
     session.add(current)
     session.commit()
-    session.refresh(current)
     return CreditCardTransactionOut.model_validate(current)
 
 
@@ -248,7 +247,6 @@ def transfer_transaction_invoice(
 
     session.add(current)
     session.commit()
-    session.refresh(current)
 
     return CreditCardTransactionOut.model_validate(current)
 

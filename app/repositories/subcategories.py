@@ -17,11 +17,10 @@ def create_subcategory(session: Session, data: SubcategoryCreate) -> Subcategory
     )
     session.add(db_subcategory)
     session.commit()
-    session.refresh(db_subcategory)
     return SubcategoryOut.model_validate(db_subcategory)
 
 
-def list_subcategories(session: Session, category_id: UUID, limit: int = 50) -> list[SubcategoryOut]:
+def list_subcategories(session: Session, category_id: UUID, limit: int) -> list[SubcategoryOut]:
     query = (
         select(Subcategory)
         .where(Subcategory.category_id == category_id)
@@ -32,7 +31,7 @@ def list_subcategories(session: Session, category_id: UUID, limit: int = 50) -> 
     return [SubcategoryOut.model_validate(row) for row in rows]
 
 
-def list_all_subcategories(session: Session, limit: int = 50) -> list[SubcategoryOut]:
+def list_all_subcategories(session: Session, limit: int) -> list[SubcategoryOut]:
     query = select(Subcategory).order_by(Subcategory.name.asc()).limit(limit)
     rows = session.scalars(query).all()
     return [SubcategoryOut.model_validate(row) for row in rows]
@@ -58,7 +57,6 @@ def update_subcategory(
 
     db_subcategory.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_subcategory)
     return SubcategoryOut.model_validate(db_subcategory)
 
 

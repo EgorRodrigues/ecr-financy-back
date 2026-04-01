@@ -17,7 +17,6 @@ def create_cost_center(session: Session, data: CostCenterCreate) -> CostCenterOu
     )
     session.add(db_cost_center)
     session.commit()
-    session.refresh(db_cost_center)
     return CostCenterOut.model_validate(db_cost_center)
 
 
@@ -47,7 +46,6 @@ def update_cost_center(
 
     db_cost_center.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_cost_center)
     return CostCenterOut.model_validate(db_cost_center)
 
 
