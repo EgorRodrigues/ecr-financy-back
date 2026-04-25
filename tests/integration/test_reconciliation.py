@@ -161,3 +161,82 @@ NEWFILEUID:NONE
     assert response.status_code == 200
     transactions = response.json()
     assert not any(t["id"] == tx_id for t in transactions)
+
+
+def test_remove_ofx_transaction_soft_delete(client: TestClient):
+    # 1. Importar OFX
+    ofx_content = """OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+ENCODING:USASCII
+CHARSET:1252
+COMPRESSION:NONE
+OLDFILEUID:NONE
+NEWFILEUID:NONE
+<OFX>
+<SIGNONMSGSRSV1>
+<SONRS>
+<STATUS>
+<CODE>0
+<SEVERITY>INFO
+</STATUS>
+<DTSERVER>20231027120000
+<LANGUAGE>POR
+</SONRS>
+</SIGNONMSGSRSV1>
+<BANKMSGSRSV1>
+<STMTTRNRS>
+<TRNUID>1
+<STATUS>
+<CODE>0
+<SEVERITY>INFO
+</STATUS>
+<STMTRS>
+<CURDEF>BRL
+<BANKACCTFROM>
+<BANKID>033
+<ACCTID>123456789
+<ACCTTYPE>CHECKING
+</BANKACCTFROM>
+<BANKTRANLIST>
+<DTSTART>20231001120000
+<DTEND>20231027120000
+<STMTTRN>
+<TRNTYPE>DEBIT
+<DTPOSTED>20231015120000
+<TRNAMT>-150.00
+<FITID>99998
+<MEMO>REMOVE TEST
+</STMTTRN>
+</BANKTRANLIST>
+<LEDGERBAL>
+<BALAMT>1000.00
+<DTASOF>20231027120000
+</LEDGERBAL>
+</STMTRS>
+</STMTTRNRS>
+</BANKMSGSRSV1>
+</OFX>
+"""
+    file = ("test.ofx", ofx_content.encode("utf-8"), "application/x-ofx")
+    client.post("/reconciliation/import-ofx", files={"file": file})
+
+    # 2. Buscar transações não reconciliadas
+    response = client.get("/reconciliation/unreconciled-ofx-transactions")
+    assert response.status_code == 200
+    transactions = response.json()
+
+    tx = next(t for t in transactions if t["fitid"] == "99998")
+    tx_id = tx["id"]
+
+    # 3. Remover via DELETE (soft delete)
+    response = client.delete(f"/reconciliation/ofx-transactions/{tx_id}")
+    assert response.status_code == 200
+    assert response.json()["message"] == "Transação OFX removida com sucesso"
+
+    # 4. Garantir que não apareça na listagem ativa
+    response = client.get("/reconciliation/unreconciled-ofx-transactions")
+    assert response.status_code == 200
+    transactions = response.json()
+    assert not any(t["id"] == tx_id for t in transactions)

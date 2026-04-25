@@ -83,6 +83,16 @@ def deactivate_ofx_transaction(transaction_id: int, db: Session = Depends(get_db
     return {"message": "Transação OFX desativada com sucesso"}
 
 
+@router.delete("/ofx-transactions/{transaction_id}")
+def remove_ofx_transaction(transaction_id: int, db: Session = Depends(get_db)):
+    repo = OFXTransactionRepository(db)
+    transaction = repo.deactivate(transaction_id)
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transação OFX não encontrada")
+
+    return {"message": "Transação OFX removida com sucesso"}
+
+
 def _process_reconciliation(match_input: ReconciliationMatchInput, db: Session):
     # 1. Buscar todas as transações OFX ativas
     repo = OFXTransactionRepository(db)
