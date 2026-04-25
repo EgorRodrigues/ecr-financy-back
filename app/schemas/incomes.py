@@ -54,6 +54,7 @@ class IncomeUpdate(BaseModel):
     project: str | None = None
     tags: list[str] | None = None
     notes: str | None = None
+    transfer_id: UUID | None = None
     active: bool | None = None
 
 
@@ -82,6 +83,7 @@ class IncomeOut(BaseModel):
     project: str | None = None
     tags: list[str] | None = None
     notes: str | None = None
+    transfer_id: UUID | None = None
     active: bool
     created_at: datetime
     updated_at: datetime
