@@ -37,7 +37,7 @@ def list_incomes(
     account_type: str | None = None,
     status: str | None = None,
 ) -> list[IncomeOut]:
-    query = select(Income)
+    query = select(Income).where(Income.transfer_id.is_(None))
     if account:
         query = query.where(Income.account_id == account)
 
