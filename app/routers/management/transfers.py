@@ -32,7 +32,19 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
     expense_contact_id = destination_account.contact_id
     income_contact_id = source_account.contact_id
 
+    if not expense_contact_id:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Destination account '{destination_account.name}' must have a contact linked for transfers"
+        )
+    if not income_contact_id:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Source account '{source_account.name}' must have a contact linked for transfers"
+        )
+
     # 3. Create Expense (Money leaving source)
+    transfer_id = uuid4()
     description = payload.description or f"Transferência para {destination_account.name}"
     
     expense = Expense(
@@ -52,6 +64,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         project=payload.project,
         competence=payload.competence,
         tags=payload.tags,
+        transfer_id=transfer_id,
         active=True
     )
     session.add(expense)
@@ -76,6 +89,7 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
         project=payload.project,
         competence=payload.competence,
         tags=payload.tags,
+        transfer_id=transfer_id,
         active=True
     )
     session.add(income)
@@ -85,4 +99,4 @@ def create_transfer(payload: TransferCreate, session: Session = Depends(get_db))
     income_id = income.id
     session.commit()
     
-    return {"message": "Transfer created successfully", "expense_id": expense_id, "income_id": income_id}
+    return {"message": "Transfer created successfully", "expense_id": expense_id, "income_id": income_id, "transfer_id": transfer_id}

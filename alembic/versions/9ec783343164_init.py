@@ -1,15 +1,16 @@
 """init
 
-Revision ID: bd629b9cb42b
+Revision ID: 9ec783343164
 Revises: 
-Create Date: 2026-02-08 21:15:11.853697
+Create Date: 2026-03-09 14:12:52.027391
 """
 from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
+
 from app.db.base import CustomArray
 
-revision: str = 'bd629b9cb42b'
+revision: str = '9ec783343164'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -95,7 +96,6 @@ def upgrade() -> None:
     sa.Column('issue_date', sa.Date(), nullable=True),
     sa.Column('due_date', sa.Date(), nullable=True),
     sa.Column('payment_date', sa.Date(), nullable=True),
-    sa.Column('original_amount', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('interest', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('fine', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('discount', sa.Numeric(precision=18, scale=2), nullable=True),
@@ -108,7 +108,6 @@ def upgrade() -> None:
     sa.Column('document', sa.Text(), nullable=True),
     sa.Column('payment_method', sa.Text(), nullable=True),
     sa.Column('account_id', sa.UUID(), nullable=True),
-    sa.Column('recurrence', sa.Boolean(), nullable=True),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
     sa.Column('tags', CustomArray(sa.Text()), nullable=True),
@@ -122,10 +121,9 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=18, scale=2), nullable=False),
     sa.Column('status', sa.Text(), nullable=False),
-    sa.Column('issue_date', sa.Date(), nullable=True),
+    sa.Column('issue_date', sa.Date(), nullable=False),
     sa.Column('due_date', sa.Date(), nullable=True),
     sa.Column('payment_date', sa.Date(), nullable=True),
-    sa.Column('original_amount', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('interest', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('fine', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('discount', sa.Numeric(precision=18, scale=2), nullable=True),
@@ -133,29 +131,31 @@ def upgrade() -> None:
     sa.Column('category_id', sa.UUID(), nullable=True),
     sa.Column('subcategory_id', sa.UUID(), nullable=True),
     sa.Column('cost_center_id', sa.UUID(), nullable=True),
-    sa.Column('contact_id', sa.UUID(), nullable=True),
-    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('contact_id', sa.UUID(), nullable=False),
+    sa.Column('description', sa.Text(), nullable=False),
     sa.Column('document', sa.Text(), nullable=True),
     sa.Column('payment_method', sa.Text(), nullable=True),
-    sa.Column('account_id', sa.UUID(), nullable=True),
-    sa.Column('recurrence', sa.Boolean(), nullable=True),
+    sa.Column('account_id', sa.UUID(), nullable=False),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
     sa.Column('tags', CustomArray(sa.Text()), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('transfer_id', sa.UUID(), nullable=True),
     sa.Column('active', sa.Boolean(), server_default='true', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('reconciled', sa.Boolean(), nullable=False),
+    sa.Column('reconciliation_date', sa.Date(), nullable=True),
+    sa.Column('reconciled_by', sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('incomes',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('amount', sa.Numeric(precision=18, scale=2), nullable=False),
     sa.Column('status', sa.Text(), nullable=False),
-    sa.Column('issue_date', sa.Date(), nullable=True),
+    sa.Column('issue_date', sa.Date(), nullable=False),
     sa.Column('due_date', sa.Date(), nullable=True),
     sa.Column('receipt_date', sa.Date(), nullable=True),
-    sa.Column('original_amount', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('interest', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('fine', sa.Numeric(precision=18, scale=2), nullable=True),
     sa.Column('discount', sa.Numeric(precision=18, scale=2), nullable=True),
@@ -163,21 +163,41 @@ def upgrade() -> None:
     sa.Column('category_id', sa.UUID(), nullable=True),
     sa.Column('subcategory_id', sa.UUID(), nullable=True),
     sa.Column('cost_center_id', sa.UUID(), nullable=True),
-    sa.Column('contact_id', sa.UUID(), nullable=True),
-    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('contact_id', sa.UUID(), nullable=False),
+    sa.Column('description', sa.Text(), nullable=False),
     sa.Column('document', sa.Text(), nullable=True),
     sa.Column('receiving_method', sa.Text(), nullable=True),
-    sa.Column('account_id', sa.UUID(), nullable=True),
-    sa.Column('recurrence', sa.Boolean(), nullable=True),
+    sa.Column('account_id', sa.UUID(), nullable=False),
     sa.Column('competence', sa.Text(), nullable=True),
     sa.Column('project', sa.Text(), nullable=True),
     sa.Column('tags', CustomArray(sa.Text()), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
+    sa.Column('transfer_id', sa.UUID(), nullable=True),
     sa.Column('active', sa.Boolean(), server_default='true', nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('reconciled', sa.Boolean(), nullable=False),
+    sa.Column('reconciliation_date', sa.Date(), nullable=True),
+    sa.Column('reconciled_by', sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('ofx_transactions',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('fitid', sa.String(), nullable=False),
+    sa.Column('amount', sa.Float(), nullable=False),
+    sa.Column('date', sa.Date(), nullable=False),
+    sa.Column('memo', sa.String(), nullable=True),
+    sa.Column('type', sa.String(), nullable=True),
+    sa.Column('bank_id', sa.String(), nullable=True),
+    sa.Column('account_id', sa.String(), nullable=True),
+    sa.Column('reconciled', sa.Boolean(), nullable=True),
+    sa.Column('reconciliation_date', sa.Date(), nullable=True),
+    sa.Column('reconciled_by', sa.String(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('fitid', 'bank_id', 'account_id', name='_fitid_bank_account_uc')
+    )
+    op.create_index(op.f('ix_ofx_transactions_fitid'), 'ofx_transactions', ['fitid'], unique=False)
+    op.create_index(op.f('ix_ofx_transactions_id'), 'ofx_transactions', ['id'], unique=False)
     op.create_table('subcategories',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('category_id', sa.UUID(), nullable=False),
@@ -188,12 +208,28 @@ def upgrade() -> None:
     sa.Column('active', sa.Boolean(), server_default='true', nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('reconciliations',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('ofx_transaction_id', sa.Integer(), nullable=False),
+    sa.Column('transaction_id', sa.String(), nullable=False),
+    sa.Column('transaction_type', sa.String(), nullable=False),
+    sa.Column('reconciliation_date', sa.Date(), nullable=False),
+    sa.Column('reconciled_by', sa.String(), nullable=False),
+    sa.ForeignKeyConstraint(['ofx_transaction_id'], ['ofx_transactions.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_reconciliations_id'), 'reconciliations', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_reconciliations_id'), table_name='reconciliations')
+    op.drop_table('reconciliations')
     op.drop_table('subcategories')
+    op.drop_index(op.f('ix_ofx_transactions_id'), table_name='ofx_transactions')
+    op.drop_index(op.f('ix_ofx_transactions_fitid'), table_name='ofx_transactions')
+    op.drop_table('ofx_transactions')
     op.drop_table('incomes')
     op.drop_table('expenses')
     op.drop_table('credit_card_transactions')

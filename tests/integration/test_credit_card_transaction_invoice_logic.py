@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 from app.models.accounts import Account
+from app.models.contacts import Contact
 from app.models.credit_card_invoices import CreditCardInvoice
 from app.models.credit_card_transactions import CreditCardTransaction
 from app.models.expenses import Expense
@@ -22,6 +23,16 @@ from app.schemas.credit_card_transactions import (
 
 @pytest.fixture
 def test_account(session):
+    contact_id = uuid4()
+    session.add(
+        Contact(
+            id=contact_id,
+            name="Bank Contact",
+            type="supplier",
+            person_type="legal",
+            active=True,
+        )
+    )
     account_id = uuid4()
     session.add(
         Account(
@@ -30,6 +41,7 @@ def test_account(session):
             type="credit_card",
             closing_day=1,
             due_day=8,
+            contact_id=contact_id,
             active=True,
         )
     )

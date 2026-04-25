@@ -27,7 +27,6 @@ def create_income(session: Session, data: IncomeCreate) -> IncomeOut:
     )
     session.add(db_income)
     session.commit()
-    session.refresh(db_income)
     return IncomeOut.model_validate(db_income)
 
 
@@ -38,7 +37,7 @@ def list_incomes(
     account_type: str | None = None,
     status: str | None = None,
 ) -> list[IncomeOut]:
-    query = select(Income)
+    query = select(Income).where(Income.transfer_id.is_(None))
     if account:
         query = query.where(Income.account_id == account)
 
@@ -77,7 +76,6 @@ def update_income(session: Session, iid: UUID, data: IncomeUpdate) -> IncomeOut 
 
     db_income.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_income)
     return IncomeOut.model_validate(db_income)
 
 

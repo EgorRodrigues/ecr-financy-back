@@ -156,7 +156,10 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
     account = session.scalar(account_query)
     
     account_name = account.name if account else "Unknown Account"
-    contact_id = str(account.contact_id) if account and account.contact_id else None
+    contact_id = account.contact_id if account and account.contact_id else None
+
+    if not contact_id:
+        raise ValueError(f"Account '{account_name}' must have a contact linked for credit card invoices")
 
     expense_status = "pago" if payload.status == "paid" else "pendente"
     description = f"Fatura Cartão - {account_name} - {payload.due_date.strftime('%m/%Y')}"
@@ -167,6 +170,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         id=expense_id,
         amount=payload.amount,
         status=expense_status,
+        issue_date=date.today(),  # Added issue_date
         due_date=payload.due_date,
         description=description,
         account_id=payload.account_id,

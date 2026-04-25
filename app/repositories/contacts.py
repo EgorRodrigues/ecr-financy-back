@@ -17,7 +17,6 @@ def create_contact(session: Session, data: ContactCreate) -> ContactOut:
     )
     session.add(db_contact)
     session.commit()
-    session.refresh(db_contact)
     return ContactOut.model_validate(db_contact)
 
 
@@ -45,7 +44,6 @@ def update_contact(session: Session, cid: UUID, data: ContactUpdate) -> ContactO
 
     db_contact.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_contact)
     return ContactOut.model_validate(db_contact)
 
 

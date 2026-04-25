@@ -13,10 +13,12 @@ PaymentMethod: TypeAlias = Literal[
 class ExpenseCreate(BaseModel):
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
-    issue_date: date | None = None
+    issue_date: date
+    contact_id: UUID
+    description: str
+    account_id: UUID
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -24,16 +26,13 @@ class ExpenseCreate(BaseModel):
     category_id: UUID | None = None
     subcategory_id: UUID | None = None
     cost_center_id: UUID | None = None
-    contact_id: UUID | None = None
-    description: str | None = None
     document: str | None = None
     payment_method: PaymentMethod | None = None
-    account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
     notes: str | None = None
+    transfer_id: UUID | None = None
     active: bool = True
 
 
@@ -43,7 +42,6 @@ class ExpenseUpdate(BaseModel):
     issue_date: date | None = None
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -56,11 +54,11 @@ class ExpenseUpdate(BaseModel):
     document: str | None = None
     payment_method: PaymentMethod | None = None
     account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
     notes: str | None = None
+    transfer_id: UUID | None = None
     active: bool | None = None
 
 
@@ -70,10 +68,12 @@ class ExpenseOut(BaseModel):
     id: UUID
     amount: Decimal
     status: Literal["pendente", "pago", "cancelado"]
-    issue_date: date | None = None
+    issue_date: date
+    contact_id: UUID
+    description: str
+    account_id: UUID
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -81,21 +81,18 @@ class ExpenseOut(BaseModel):
     category_id: UUID | None = None
     subcategory_id: UUID | None = None
     cost_center_id: UUID | None = None
-    contact_id: UUID | None = None
-    description: str | None = None
     document: str | None = None
     payment_method: PaymentMethod | None = None
-    account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
     notes: str | None = None
+    transfer_id: UUID | None = None
     active: bool
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer("amount", "original_amount", "interest", "fine", "discount", "total_paid")
+    @field_serializer("amount", "interest", "fine", "discount", "total_paid")
     def _ser_amounts(self, v: Decimal | None):
         from decimal import Decimal as _D
 

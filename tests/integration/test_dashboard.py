@@ -2,11 +2,24 @@ from datetime import date, timedelta
 from uuid import uuid4
 
 from app.models.accounts import Account
+from app.models.contacts import Contact
 from app.models.expenses import Expense
 from app.models.incomes import Income
 
 
 def test_dashboard_endpoint(client, session):
+    # 0. Setup Contact
+    contact_id = uuid4()
+    session.add(
+        Contact(
+            id=contact_id,
+            name="Test Contact",
+            type="customer",
+            person_type="individual",
+            active=True
+        )
+    )
+
     # 1. Setup Data
     # Account 1
     acct1_id = uuid4()
@@ -44,6 +57,7 @@ def test_dashboard_endpoint(client, session):
             issue_date=last_month,
             status="recebido",
             account_id=acct1_id,
+            contact_id=contact_id,
             active=True
         )
     )
@@ -58,6 +72,7 @@ def test_dashboard_endpoint(client, session):
             issue_date=date.today(),
             status="recebido",
             account_id=acct1_id,
+            contact_id=contact_id,
             active=True
         )
     )
@@ -73,6 +88,7 @@ def test_dashboard_endpoint(client, session):
             issue_date=last_month,
             status="pago",
             account_id=acct1_id,
+            contact_id=contact_id,
             active=True
         )
     )

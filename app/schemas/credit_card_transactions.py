@@ -18,7 +18,6 @@ class CreditCardTransactionCreate(BaseModel):
     issue_date: date | None = None
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -31,7 +30,6 @@ class CreditCardTransactionCreate(BaseModel):
     document: str | None = None
     payment_method: PaymentMethod | None = "credit_card"
     account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
@@ -45,7 +43,6 @@ class CreditCardTransactionUpdate(BaseModel):
     issue_date: date | None = None
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -58,7 +55,6 @@ class CreditCardTransactionUpdate(BaseModel):
     document: str | None = None
     payment_method: PaymentMethod | None = "credit_card"
     account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
@@ -79,7 +75,6 @@ class CreditCardTransactionOut(BaseModel):
     issue_date: date | None = None
     due_date: date | None = None
     payment_date: date | None = None
-    original_amount: Decimal | None = None
     interest: Decimal | None = None
     fine: Decimal | None = None
     discount: Decimal | None = None
@@ -92,7 +87,6 @@ class CreditCardTransactionOut(BaseModel):
     document: str | None = None
     payment_method: PaymentMethod | None = None
     account_id: UUID | None = None
-    recurrence: bool | None = None
     competence: str | None = None
     project: str | None = None
     tags: list[str] | None = None
@@ -102,7 +96,7 @@ class CreditCardTransactionOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    @field_serializer("amount", "original_amount", "interest", "fine", "discount", "total_paid")
+    @field_serializer("amount", "interest", "fine", "discount", "total_paid")
     def _ser_amounts(self, v: Decimal | None):
         from decimal import Decimal as _D
 

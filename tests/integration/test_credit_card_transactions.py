@@ -4,6 +4,11 @@ from fastapi.testclient import TestClient
 
 
 def test_create_cc_transaction(client: TestClient):
+    # Create Contact first
+    con_res = client.post("/contacts/", json={"name": "Bank Contact", "type": "supplier", "person_type": "company"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     # Create Credit Card Account
     acc_payload = {
         "name": "My CC",
@@ -11,6 +16,7 @@ def test_create_cc_transaction(client: TestClient):
         "closing_day": 5,
         "due_day": 10,
         "available_limit": 1000.0,
+        "contact_id": contact_id,
     }
     acc_res = client.post("/accounts/", json=acc_payload)
     assert acc_res.status_code == 200
@@ -35,6 +41,10 @@ def test_create_cc_transaction(client: TestClient):
 
 
 def _create_cc_transaction_helper(client: TestClient):
+    # Create Contact first
+    con_res = client.post("/contacts/", json={"name": "Bank Contact Helper", "type": "supplier", "person_type": "company"})
+    contact_id = con_res.json()["id"]
+
     # Create Credit Card Account
     acc_payload = {
         "name": "My CC Helper",
@@ -42,6 +52,7 @@ def _create_cc_transaction_helper(client: TestClient):
         "closing_day": 5,
         "due_day": 10,
         "available_limit": 1000.0,
+        "contact_id": contact_id,
     }
     acc_res = client.post("/accounts/", json=acc_payload)
     account_id = acc_res.json()["id"]

@@ -17,7 +17,6 @@ def create_account(session: Session, data: AccountCreate) -> AccountOut:
     )
     session.add(db_account)
     session.commit()
-    session.refresh(db_account)
     return AccountOut.model_validate(db_account)
 
 
@@ -55,7 +54,6 @@ def update_account(session: Session, aid: UUID, payload: AccountUpdate) -> Accou
 
     db_account.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_account)
     return AccountOut.model_validate(db_account)
 
 

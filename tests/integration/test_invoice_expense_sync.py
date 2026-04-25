@@ -17,10 +17,23 @@ from app.repositories.credit_card_invoices import (
     update_invoice_amount,
 )
 from app.repositories.expenses import delete_expense, update_expense
+from app.models.accounts import Account
+from app.models.contacts import Contact
+from app.models.credit_card_invoices import CreditCardInvoice
 
 
 @pytest.fixture
 def test_account(session):
+    contact_id = uuid4()
+    session.add(
+        Contact(
+            id=contact_id,
+            name="Bank Contact",
+            type="supplier",
+            person_type="legal",
+            active=True,
+        )
+    )
     account_id = uuid4()
     session.add(
         Account(
@@ -29,6 +42,7 @@ def test_account(session):
             type="credit_card",
             closing_day=1,
             due_day=8,
+            contact_id=contact_id,
             active=True,
         )
     )

@@ -16,7 +16,7 @@ def test_bank_statement_basic(client: TestClient):
     assert r_acc.status_code == 200
     account_id = r_acc.json()["id"]
 
-    # 1.5 Create Categories
+    # 1.5 Create Categories and Contact
     cat_work = client.post("/categories/", json={"name": "Work", "active": True})
     assert cat_work.status_code == 200
     cat_work_id = cat_work.json()["id"]
@@ -25,6 +25,10 @@ def test_bank_statement_basic(client: TestClient):
     assert cat_food.status_code == 200
     cat_food_id = cat_food.json()["id"]
 
+    con_res = client.post("/contacts/", json={"name": "Test Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     # 2. Create Income (Received)
     today = date.today().isoformat()
     inc_payload = {
@@ -32,8 +36,10 @@ def test_bank_statement_basic(client: TestClient):
         "total_received": 500.00,
         "status": "recebido",
         "receipt_date": today,
+        "issue_date": today,
         "description": "Salary",
         "account_id": account_id,
+        "contact_id": contact_id,
         "category_id": cat_work_id,
         "active": True,
     }
@@ -46,8 +52,10 @@ def test_bank_statement_basic(client: TestClient):
         "total_paid": 200.00,
         "status": "pago",
         "payment_date": today,
+        "issue_date": today,
         "description": "Grocery",
         "account_id": account_id,
+        "contact_id": contact_id,
         "category_id": cat_food_id,
         "active": True,
     }
@@ -62,8 +70,10 @@ def test_bank_statement_basic(client: TestClient):
         # Even if it has a payment_date (user error or scheduled), it should NOT appear
         # if status is pending
         "payment_date": today,
+        "issue_date": today,
         "description": "Future Bill",
         "account_id": account_id,
+        "contact_id": contact_id,
         "active": True,
     }
     r_exp_p = client.post("/expenses/", json=exp_pending_payload)
@@ -119,6 +129,11 @@ def test_bank_statement_with_filters(client: TestClient):
         "/accounts/", json={"name": "Filter Account", "type": "bank", "initial_balance": 0}
     )
     aid = r_acc.json()["id"]
+
+    con_res = client.post("/contacts/", json={"name": "Test Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     today = date.today().isoformat()
 
     # Income today
@@ -129,7 +144,9 @@ def test_bank_statement_with_filters(client: TestClient):
             "total_received": 100,
             "status": "recebido",
             "receipt_date": today,
+            "issue_date": today,
             "account_id": aid,
+            "contact_id": contact_id,
             "description": "Today Inc",
         },
     )
@@ -155,7 +172,9 @@ def test_bank_statement_with_filters(client: TestClient):
             "total_paid": 50,
             "status": "pago",
             "payment_date": past_date,
+            "issue_date": past_date,
             "account_id": aid,
+            "contact_id": contact_id,
             "description": "Old Exp",
         },
     )
@@ -186,6 +205,10 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
     r_b = client.post("/accounts/", json={"name": "Acc B", "type": "bank", "initial_balance": 200})
     aid_b = r_b.json()["id"]
 
+    con_res = client.post("/contacts/", json={"name": "Test Contact", "type": "customer", "person_type": "individual"})
+    assert con_res.status_code == 200
+    contact_id = con_res.json()["id"]
+
     today = date.today().isoformat()
 
     # Income on A
@@ -196,7 +219,9 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
             "total_received": 50,
             "status": "recebido",
             "receipt_date": today,
+            "issue_date": today,
             "account_id": aid_a,
+            "contact_id": contact_id,
             "description": "Inc A",
         },
     )
@@ -209,7 +234,9 @@ def test_bank_statement_multiple_accounts_filter(client: TestClient):
             "total_received": 60,
             "status": "recebido",
             "receipt_date": today,
+            "issue_date": today,
             "account_id": aid_b,
+            "contact_id": contact_id,
             "description": "Inc B",
         },
     )

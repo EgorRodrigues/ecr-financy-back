@@ -17,7 +17,6 @@ def create_category(session: Session, data: CategoryCreate) -> CategoryOut:
     )
     session.add(db_category)
     session.commit()
-    session.refresh(db_category)
     return CategoryOut.model_validate(db_category)
 
 
@@ -45,7 +44,6 @@ def update_category(session: Session, cid: UUID, data: CategoryUpdate) -> Catego
 
     db_category.updated_at = datetime.now(UTC)
     session.commit()
-    session.refresh(db_category)
     return CategoryOut.model_validate(db_category)
 
 

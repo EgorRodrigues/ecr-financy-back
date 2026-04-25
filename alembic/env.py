@@ -54,31 +54,35 @@ def run_migrations_offline():
 
 def run_migrations_online():
     connectable = create_engine(
-        config.get_main_option("sqlalchemy.url"), poolclass=pool.NullPool, future=True
+        config.get_main_option("sqlalchemy.url"),
+        poolclass=pool.NullPool,
+        future=True,
     )
 
-    target_schema = config.attributes.get("target_schema")
-    if not target_schema:
-        target_schema = os.environ.get("TARGET_SCHEMA")
+    target_schema = config.attributes.get("target_schema") or os.environ.get("TARGET_SCHEMA")
 
     with connectable.connect() as connection:
-        if target_schema:
-            connection.execute(text(f"SET search_path TO {target_schema}"))
 
+        if target_schema:
+            if not target_schema.startswith("tenant_"):
+                raise ValueError(f"Invalid schema name: {target_schema}")
+
+            connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{target_schema}"'))
+            connection.execute(text(f'SET search_path TO "{target_schema}", public'))
+
+            connection.commit()  # 👈 ESSENCIAL
+            
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
+            include_schemas=True,  # 👈 MUITO IMPORTANTE
             version_table_schema=target_schema,
         )
 
         with context.begin_transaction():
             context.run_migrations()
-        
-        # Explicitly commit the connection
-        connection.commit()
-
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -88,8 +88,13 @@ def create_credit_card_transaction(
 
             if transaction_data.get("status") != "cancelado":
                 update_invoice_amount(session, invoice.id, transaction_data["amount"])
-        except Exception:
-            pass
+        except Exception as e:
+            # Log the error but don't fail the transaction creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to create/update invoice for transaction: {e}")
+            session.rollback()
+            invoice_id = None
             
     transaction_data["id"] = eid
     transaction_data["created_at"] = now
@@ -101,7 +106,6 @@ def create_credit_card_transaction(
     new_transaction = CreditCardTransaction(**transaction_data)
     session.add(new_transaction)
     session.commit()
-    session.refresh(new_transaction)
     
     return CreditCardTransactionOut.model_validate(new_transaction)
 
@@ -212,7 +216,6 @@ def update_credit_card_transaction(
     current.updated_at = datetime.now(UTC)
     session.add(current)
     session.commit()
-    session.refresh(current)
     return CreditCardTransactionOut.model_validate(current)
 
 
@@ -244,7 +247,6 @@ def transfer_transaction_invoice(
 
     session.add(current)
     session.commit()
-    session.refresh(current)
 
     return CreditCardTransactionOut.model_validate(current)
 

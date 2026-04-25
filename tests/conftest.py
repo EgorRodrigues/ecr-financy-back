@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
 from app.main import app
+from app.dependencies import get_current_user_payload
 
 
 @event.listens_for(Engine, "connect")
@@ -87,5 +88,14 @@ def client(session):
 
     app.state.postgres_session = MockSessionLocal()
 
+    # Override authentication
+    def override_get_current_user_payload():
+        return {"sub": "test-user-id"}
+
+    app.dependency_overrides[get_current_user_payload] = override_get_current_user_payload
+
     with TestClient(app) as c:
         yield c
+    
+    # Clean up overrides
+    app.dependency_overrides.clear()
