@@ -104,6 +104,7 @@ def get_financial_forecast(
             inc_date_col.label("date"),
             inc_amount_col.label("amount"),
             Income.status,
+            Income.description,
             Category.name.label("category_name"),
         )
         .outerjoin(Category, join_cond_inc)
@@ -130,6 +131,7 @@ def get_financial_forecast(
                 id=str(row.id),
                 month=get_period_str(row.date),
                 category=row.category_name or "Sem Categoria",
+                description=row.description,
                 amount=float(row.amount or 0),
                 status=status_mapped,
                 type="income",
@@ -160,6 +162,7 @@ def get_financial_forecast(
             exp_date_col.label("date"),
             exp_amount_col.label("amount"),
             Expense.status,
+            Expense.description,
             Category.name.label("category_name"),
         )
         .outerjoin(Category, join_cond_exp)
@@ -185,6 +188,7 @@ def get_financial_forecast(
                 id=str(row.id),
                 month=get_period_str(row.date),
                 category=row.category_name or "Sem Categoria",
+                description=row.description,
                 amount=float(row.amount or 0),
                 status=status_mapped,
                 type="expense",
