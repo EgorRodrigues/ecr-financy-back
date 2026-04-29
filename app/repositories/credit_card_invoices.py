@@ -157,6 +157,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
     
     account_name = account.name if account else "Unknown Account"
     contact_id = account.contact_id if account and account.contact_id else None
+    category_id = account.category_id if account and account.category_id else None
 
     if not contact_id:
         raise ValueError(f"Account '{account_name}' must have a contact linked for credit card invoices")
@@ -175,6 +176,7 @@ def create_invoice(session: Session, payload: CreditCardInvoiceCreate):
         description=description,
         account_id=payload.account_id,
         contact_id=contact_id,
+        category_id=category_id,
         active=True,
     )
     session.add(new_expense)
