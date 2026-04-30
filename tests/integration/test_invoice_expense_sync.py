@@ -3,9 +3,10 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
 
 from app.models.accounts import Account
+from app.models.categories import Category
+from app.models.contacts import Contact
 from app.models.credit_card_invoices import CreditCardInvoice
 from app.models.expenses import Expense
 from app.schemas.credit_card_invoices import CreditCardInvoiceCreate, CreditCardInvoiceUpdate
@@ -17,9 +18,6 @@ from app.repositories.credit_card_invoices import (
     update_invoice_amount,
 )
 from app.repositories.expenses import delete_expense, update_expense
-from app.models.accounts import Account
-from app.models.contacts import Contact
-from app.models.credit_card_invoices import CreditCardInvoice
 
 
 @pytest.fixture
@@ -34,6 +32,8 @@ def test_account(session):
             active=True,
         )
     )
+    category_id = uuid4()
+    session.add(Category(id=category_id, name="Cartão de Crédito", description=None, active=True))
     account_id = uuid4()
     session.add(
         Account(
@@ -43,19 +43,21 @@ def test_account(session):
             closing_day=1,
             due_day=8,
             contact_id=contact_id,
+            category_id=category_id,
             active=True,
         )
     )
     session.flush()
-    return account_id
+    return account_id, category_id
 
 
 def test_create_invoice_syncs_expense(session, test_account):
     """
     Test that creating an invoice creates a corresponding expense.
     """
+    account_id, category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -74,14 +76,16 @@ def test_create_invoice_syncs_expense(session, test_account):
     assert expense.due_date == date(2026, 1, 8)
     assert "Test Account Sync" in expense.description
     assert expense.status == "pendente"  # Open invoice -> pendente
+    assert expense.category_id == category_id
 
 
 def test_update_invoice_amount_syncs_expense(session, test_account):
     """
     Test that updating invoice amount updates the expense amount.
     """
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -103,8 +107,9 @@ def test_update_invoice_properties_syncs_expense(session, test_account):
     """
     Test that updating invoice status/due_date updates the expense.
     """
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -125,8 +130,9 @@ def test_update_invoice_properties_syncs_expense(session, test_account):
 
 
 def test_update_invoice_payment_fields_syncs_expense(session, test_account):
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -161,8 +167,9 @@ def test_delete_invoice_syncs_expense(session, test_account):
     """
     Test that deleting an invoice deletes the corresponding expense.
     """
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -186,8 +193,9 @@ def test_delete_invoice_syncs_expense(session, test_account):
 
 
 def test_cannot_update_linked_expense_directly(session, test_account):
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),
@@ -205,8 +213,9 @@ def test_cannot_update_linked_expense_directly(session, test_account):
 
 
 def test_cannot_delete_linked_expense_directly(session, test_account):
+    account_id, _category_id = test_account
     invoice_data = CreditCardInvoiceCreate(
-        account_id=test_account,
+        account_id=account_id,
         period_start=date(2025, 12, 2),
         period_end=date(2026, 1, 1),
         due_date=date(2026, 1, 8),

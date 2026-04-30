@@ -38,7 +38,7 @@ def list_expenses(
     account_type: str | None = None,
     status: str | None = None,
 ) -> list[ExpenseOut]:
-    query = select(Expense).where(Expense.transfer_id.is_(None))
+    query = select(Expense)
 
     if account:
         query = query.where(Expense.account_id == account)

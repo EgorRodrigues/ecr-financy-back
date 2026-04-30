@@ -9,6 +9,9 @@ from app.schemas.accounts import AccountCreate, AccountOut, AccountUpdate
 
 
 def create_account(session: Session, data: AccountCreate) -> AccountOut:
+    if data.type != "credit_card" and data.category_id is not None:
+        raise ValueError("category_id is only allowed for credit_card accounts")
+
     db_account = Account(
         **data.model_dump(),
         id=uuid4(),
@@ -51,6 +54,9 @@ def update_account(session: Session, aid: UUID, payload: AccountUpdate) -> Accou
     update_data = payload.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_account, key, value)
+
+    if db_account.type != "credit_card" and db_account.category_id is not None:
+        raise ValueError("category_id is only allowed for credit_card accounts")
 
     db_account.updated_at = datetime.now(UTC)
     session.commit()

@@ -18,7 +18,11 @@ router = APIRouter()
 
 @router.post("/", response_model=AccountOut)
 def create(payload: AccountCreate, session: Session = Depends(get_db)):
-    return create_account(session, payload)
+    try:
+        return create_account(session, payload)
+    except ValueError as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/", response_model=list[AccountOut])
@@ -41,10 +45,14 @@ def get(account_id: UUID, session: Session = Depends(get_db)):
 
 @router.put("/{account_id}", response_model=AccountOut)
 def update(account_id: UUID, payload: AccountUpdate, session: Session = Depends(get_db)):
-    item = update_account(session, account_id, payload)
-    if not item:
-        raise HTTPException(status_code=404, detail="Account not found")
-    return item
+    try:
+        item = update_account(session, account_id, payload)
+        if not item:
+            raise HTTPException(status_code=404, detail="Account not found")
+        return item
+    except ValueError as e:
+        session.rollback()
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.delete("/{account_id}")

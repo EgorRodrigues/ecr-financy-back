@@ -49,3 +49,4 @@ def test_financial_forecast_execution(client: TestClient):
     data = response.json()
     assert isinstance(data, list)
     # We might verify content, but main goal is ensuring query execution works
+    assert all("description" in item for item in data)
