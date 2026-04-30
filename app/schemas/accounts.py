@@ -76,6 +76,7 @@ class AccountOut(BaseModel):
     available_limit: float | None = None
     closing_day: int | None = None
     due_day: int | None = None
+    contact_id: UUID | None = None
     category_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
