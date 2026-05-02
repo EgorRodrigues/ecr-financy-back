@@ -4,135 +4,67 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fluxo 01 — Criação de tenant</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0b0f14;
-        --panel: #121923;
-        --text: #e6edf3;
-        --muted: #a4b1c0;
-        --link: #7aa2ff;
-        --border: rgba(255, 255, 255, 0.12);
-        --code: rgba(255, 255, 255, 0.06);
-      }
-      @media (prefers-color-scheme: light) {
-        :root {
-          --bg: #ffffff;
-          --panel: #f6f8fa;
-          --text: #1f2328;
-          --muted: #57606a;
-          --link: #0969da;
-          --border: rgba(31, 35, 40, 0.18);
-          --code: rgba(31, 35, 40, 0.06);
-        }
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Helvetica,
-          Arial;
-        background: var(--bg);
-        color: var(--text);
-        line-height: 1.5;
-      }
-      header {
-        padding: 18px 20px 12px;
-        border-bottom: 1px solid var(--border);
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      h1 {
-        margin: 0 0 6px;
-        font-size: 20px;
-      }
-      h2 {
-        margin: 18px 0 10px;
-        font-size: 16px;
-      }
-      h3 {
-        margin: 16px 0 8px;
-        font-size: 14px;
-      }
-      .muted {
-        color: var(--muted);
-      }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 14px;
-        overflow-x: auto;
-      }
-      a {
-        color: var(--link);
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      code {
-        background: var(--code);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.92em;
-      }
-      ul {
-        margin: 8px 0 10px 20px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      @media (min-width: 900px) {
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-      .kvs {
-        display: grid;
-        grid-template-columns: 170px 1fr;
-        gap: 8px 12px;
-        align-items: start;
-        margin: 0;
-      }
-      .kvs dt {
-        color: var(--muted);
-      }
-      .kvs dd {
-        margin: 0;
-      }
-      nav {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-      }
-    </style>
+    <link rel="stylesheet" href="./assets/study.css" />
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   </head>
   <body>
-    <header>
-      <nav>
-        <a href="./index.html">← Index</a>
-        <span class="muted">Fluxo 01</span>
-      </nav>
-      <h1>Criação de um novo tenant (provisionamento lazy)</h1>
-      <p class="muted">
-        O schema do tenant é criado automaticamente no primeiro acesso ao banco por um usuário.
-      </p>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 01 — Criação de tenant</div>
+          <div class="brand-subtitle">Provisionamento lazy do schema por usuário</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-01-tenant.html</span>
+        </div>
+      </div>
     </header>
-    <main>
+    <main class="container">
+      <section class="hero">
+        <h1>Criação de um novo tenant (provisionamento lazy)</h1>
+        <p>O schema do tenant é criado automaticamente no primeiro acesso ao banco por um usuário.</p>
+        <div class="pills">
+          <span class="pill">Depends(get_db)</span>
+          <span class="pill">tenant_&lt;sub&gt;</span>
+          <span class="pill">Alembic upgrade head</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Request autenticado</strong>
+              <span>Qualquer endpoint com <code>Depends(get_db)</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Resolve tenant</strong>
+              <span>Calcula <code>tenant_&lt;sub_sem_hifen&gt;</code> a partir do JWT.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Provisiona schema</strong>
+              <span>Se não existir, cria schema e roda migrações Alembic.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Aponta a sessão</strong>
+              <span>Executa <code>SET search_path</code> para o schema do tenant.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Fluxo do endpoint</strong>
+              <span>CRUD/relatórios seguem usando a mesma sessão.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
       <div class="grid">
         <section class="panel">
           <h2>Resumo</h2>
@@ -189,7 +121,8 @@
 
       <h2>Diagrama (sequência)</h2>
       <section class="panel">
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente (Front/CLI)
@@ -217,7 +150,8 @@ sequenceDiagram
   Dep->>DB: SET search_path TO tenant_...
   Dep-->>API: Session (apontando para o schema do tenant)
   API-->>Client: Response (fluxo normal do endpoint)
-        </pre>
+          </pre>
+        </div>
         <p class="muted">
           Referências:
           <a
@@ -252,8 +186,6 @@ sequenceDiagram
         </ul>
       </section>
     </main>
-    <script>
-      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
-    </script>
+    <script src="./assets/study.js"></script>
   </body>
 </html>

@@ -4,131 +4,61 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fluxo 03 — Cadastro de Conta (Accounts)</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0b0f14;
-        --panel: #121923;
-        --text: #e6edf3;
-        --muted: #a4b1c0;
-        --link: #7aa2ff;
-        --border: rgba(255, 255, 255, 0.12);
-        --code: rgba(255, 255, 255, 0.06);
-      }
-      @media (prefers-color-scheme: light) {
-        :root {
-          --bg: #ffffff;
-          --panel: #f6f8fa;
-          --text: #1f2328;
-          --muted: #57606a;
-          --link: #0969da;
-          --border: rgba(31, 35, 40, 0.18);
-          --code: rgba(31, 35, 40, 0.06);
-        }
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Helvetica,
-          Arial;
-        background: var(--bg);
-        color: var(--text);
-        line-height: 1.5;
-      }
-      header {
-        padding: 18px 20px 12px;
-        border-bottom: 1px solid var(--border);
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      h1 {
-        margin: 0 0 6px;
-        font-size: 20px;
-      }
-      h2 {
-        margin: 18px 0 10px;
-        font-size: 16px;
-      }
-      .muted {
-        color: var(--muted);
-      }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 14px;
-        overflow-x: auto;
-      }
-      a {
-        color: var(--link);
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      code {
-        background: var(--code);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.92em;
-      }
-      ul {
-        margin: 8px 0 10px 20px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      @media (min-width: 900px) {
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-      .kvs {
-        display: grid;
-        grid-template-columns: 170px 1fr;
-        gap: 8px 12px;
-        align-items: start;
-        margin: 0;
-      }
-      .kvs dt {
-        color: var(--muted);
-      }
-      .kvs dd {
-        margin: 0;
-      }
-      nav {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-      }
-    </style>
+    <link rel="stylesheet" href="./assets/study.css" />
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   </head>
   <body>
-    <header>
-      <nav>
-        <a href="./index.html">← Index</a>
-        <span class="muted">Fluxo 03</span>
-      </nav>
-      <h1>Cadastro de Conta (Accounts)</h1>
-      <p class="muted">
-        Cria uma conta do tipo <code>bank</code>, <code>wallet</code> ou <code>credit_card</code>.
-      </p>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 03 — Cadastro de Conta (Accounts)</div>
+          <div class="brand-subtitle">Bank, wallet e credit_card</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-03-accounts.html</span>
+        </div>
+      </div>
     </header>
-    <main>
+    <main class="container">
+      <section class="hero">
+        <h1>Cadastro de Conta (Accounts)</h1>
+        <p>Cria uma conta do tipo <code>bank</code>, <code>wallet</code> ou <code>credit_card</code>.</p>
+        <div class="pills">
+          <span class="pill">POST /accounts/</span>
+          <span class="pill">credit_card rules</span>
+          <span class="pill">closing_day/due_day</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Request autenticado</strong>
+              <span>Router recebe <code>POST /accounts/</code> com JWT válido.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Seleciona tenant</strong>
+              <span><code>get_db</code> garante schema e ajusta <code>search_path</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Valida regras do schema</strong>
+              <span>Dias 1..31 e <code>category_id</code> apenas para <code>credit_card</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Persiste conta</strong>
+              <span>Cria <code>accounts</code>, faz <code>commit</code> e retorna <code>AccountOut</code>.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
       <div class="grid">
         <section class="panel">
           <h2>Resumo</h2>
@@ -198,7 +128,8 @@
 
       <h2>Diagrama (sequência)</h2>
       <section class="panel">
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente (Front/CLI)
@@ -230,11 +161,10 @@ sequenceDiagram
       API-->>Client: 200 OK + AccountOut
     end
   end
-        </pre>
+          </pre>
+        </div>
       </section>
     </main>
-    <script>
-      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
-    </script>
+    <script src="./assets/study.js"></script>
   </body>
 </html>

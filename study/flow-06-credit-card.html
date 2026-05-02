@@ -4,136 +4,76 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fluxo 06 — Cartão de Crédito (Fatura + Transações + Parcelamento)</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #0b0f14;
-        --panel: #121923;
-        --text: #e6edf3;
-        --muted: #a4b1c0;
-        --link: #7aa2ff;
-        --border: rgba(255, 255, 255, 0.12);
-        --code: rgba(255, 255, 255, 0.06);
-      }
-      @media (prefers-color-scheme: light) {
-        :root {
-          --bg: #ffffff;
-          --panel: #f6f8fa;
-          --text: #1f2328;
-          --muted: #57606a;
-          --link: #0969da;
-          --border: rgba(31, 35, 40, 0.18);
-          --code: rgba(31, 35, 40, 0.06);
-        }
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          Helvetica,
-          Arial;
-        background: var(--bg);
-        color: var(--text);
-        line-height: 1.5;
-      }
-      header {
-        padding: 18px 20px 12px;
-        border-bottom: 1px solid var(--border);
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      h1 {
-        margin: 0 0 6px;
-        font-size: 20px;
-      }
-      h2 {
-        margin: 18px 0 10px;
-        font-size: 16px;
-      }
-      h3 {
-        margin: 14px 0 8px;
-        font-size: 14px;
-      }
-      .muted {
-        color: var(--muted);
-      }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 14px;
-        overflow-x: auto;
-      }
-      a {
-        color: var(--link);
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      code {
-        background: var(--code);
-        padding: 2px 6px;
-        border-radius: 6px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.92em;
-      }
-      ul {
-        margin: 8px 0 10px 20px;
-      }
-      .grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      @media (min-width: 900px) {
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-      .kvs {
-        display: grid;
-        grid-template-columns: 190px 1fr;
-        gap: 8px 12px;
-        align-items: start;
-        margin: 0;
-      }
-      .kvs dt {
-        color: var(--muted);
-      }
-      .kvs dd {
-        margin: 0;
-      }
-      nav {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-      }
-    </style>
+    <link rel="stylesheet" href="./assets/study.css" />
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   </head>
   <body>
-    <header>
-      <nav>
-        <a href="./index.html">← Index</a>
-        <span class="muted">Fluxo 06</span>
-      </nav>
-      <h1>Cartão de Crédito (Fatura + Transações + Parcelamento)</h1>
-      <p class="muted">
-        Este módulo amarra: <code>credit_card_transactions</code> → <code>credit_card_invoices</code> →
-        <code>expenses</code> (uma expense por fatura).
-      </p>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 06 — Cartão de Crédito</div>
+          <div class="brand-subtitle">Faturas, transações, parcelamento e expense automática</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-06-credit-card.html</span>
+        </div>
+      </div>
     </header>
-    <main>
+    <main class="container">
+      <section class="hero">
+        <h1>Cartão de Crédito (Fatura + Transações + Parcelamento)</h1>
+        <p>
+          Este módulo amarra: <code>credit_card_transactions</code> → <code>credit_card_invoices</code> →
+          <code>expenses</code> (uma expense por fatura).
+        </p>
+        <div class="pills">
+          <span class="pill">/credit-card-transactions</span>
+          <span class="pill">/credit-card-invoices</span>
+          <span class="pill">installments</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Compra</strong>
+              <span>Cria uma <code>credit_card_transaction</code> e tenta amarrar uma fatura.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Garante fatura</strong>
+              <span>Calcula período via <code>closing_day</code>/<code>due_day</code> e cria fatura se necessário.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Expense da fatura</strong>
+              <span>Ao criar fatura, cria também uma <code>Expense</code> vinculada por <code>expense_id</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Atualiza valores</strong>
+              <span>Mudanças de transações ajustam <code>invoice.amount</code> e sincronizam <code>expense.amount</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Parcelamento</strong>
+              <span>Cria 1 grupo + N transações, cada uma em sua fatura do mês.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Regras e bloqueios</strong>
+              <span>Expense de fatura não pode ser alterada/removida no módulo de expenses.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
       <div class="grid">
         <section class="panel">
           <h2>Visão geral</h2>
@@ -234,7 +174,8 @@
           >.
         </p>
         <h3>Diagrama</h3>
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente
@@ -256,7 +197,8 @@ sequenceDiagram
   end
   Repo->>DB: INSERT credit_card_transactions + COMMIT
   API-->>Client: CreditCardTransactionOut
-        </pre>
+          </pre>
+        </div>
       </section>
 
       <h2>Fluxo B — Compra parcelada (installments)</h2>
@@ -296,7 +238,8 @@ sequenceDiagram
           >.
         </p>
         <h3>Diagrama</h3>
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente
@@ -319,7 +262,8 @@ sequenceDiagram
   end
   Repo->>DB: COMMIT
   API-->>Client: group + transactions
-        </pre>
+          </pre>
+        </div>
       </section>
 
       <h2>Fluxo C — Gestão do parcelamento</h2>
@@ -361,7 +305,8 @@ sequenceDiagram
           >.
         </p>
         <h3>Diagrama (cancelar vs desativar)</h3>
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente
@@ -381,7 +326,8 @@ sequenceDiagram
   end
   Repo->>DB: COMMIT
   API-->>Client: group + transactions
-        </pre>
+          </pre>
+        </div>
       </section>
 
       <h2>Fluxo D — Fatura (Invoice) e Expense automática</h2>
@@ -422,7 +368,8 @@ sequenceDiagram
           >.
         </p>
         <h3>Diagrama (criação de fatura)</h3>
-        <pre class="mermaid">
+        <div class="diagram">
+          <pre class="mermaid">
 sequenceDiagram
   autonumber
   actor Client as Cliente
@@ -439,7 +386,8 @@ sequenceDiagram
   Repo->>DB: INSERT credit_card_invoices (expense_id)
   Repo-->>API: CreditCardInvoiceOut
   API-->>Client: 201 Created
-        </pre>
+          </pre>
+        </div>
       </section>
 
       <h2>Regras de negócio — validações e bloqueios</h2>
@@ -491,8 +439,6 @@ sequenceDiagram
         </p>
       </section>
     </main>
-    <script>
-      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
-    </script>
+    <script src="./assets/study.js"></script>
   </body>
 </html>
