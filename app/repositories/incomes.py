@@ -148,6 +148,8 @@ def create_installment_incomes(
         else:
             installment_amount = amount_total - (per_installment * Decimal(installments_total - 1))
 
+        installment_description = f"{payload.description} ({installment_number}/{installments_total})"
+
         income_data = {
             "amount": installment_amount,
             "status": payload.status,
@@ -162,7 +164,7 @@ def create_installment_incomes(
             "subcategory_id": payload.subcategory_id,
             "cost_center_id": payload.cost_center_id,
             "contact_id": payload.contact_id,
-            "description": payload.description,
+            "description": installment_description,
             "document": payload.document,
             "receiving_method": payload.receiving_method,
             "account_id": payload.account_id,

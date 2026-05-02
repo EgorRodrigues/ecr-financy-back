@@ -169,6 +169,11 @@ def test_cc_transaction_installments_group_flow(client: TestClient):
     assert all(t["installments_total"] == 3 for t in data["transactions"])
     assert [t["installment_number"] for t in data["transactions"]] == [1, 2, 3]
     assert all(t["invoice_id"] is not None for t in data["transactions"])
+    assert [t["description"] for t in data["transactions"]] == [
+        "Compra 3x (1/3)",
+        "Compra 3x (2/3)",
+        "Compra 3x (3/3)",
+    ]
 
     summary_res = client.get(f"/credit-card-transactions/summary/{account_id}")
     assert summary_res.status_code == 200

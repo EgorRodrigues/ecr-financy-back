@@ -101,6 +101,7 @@ def test_create_expense_installments_group(client: TestClient):
         assert exp["installment_group_id"] == group_id
         assert exp["installment_number"] == idx
         assert exp["installments_total"] == 3
+        assert exp["description"] == f"Compra parcelada ({idx}/3)"
 
     assert sum(e["amount"] for e in expenses) == 100
 

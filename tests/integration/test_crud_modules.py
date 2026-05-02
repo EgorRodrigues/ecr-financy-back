@@ -71,6 +71,11 @@ def test_income_installments_group_summary_and_actions(client: TestClient):
     group_id = data["group"]["id"]
     assert len(data["incomes"]) == 3
     assert sum(i["amount"] for i in data["incomes"]) == 300
+    assert [i["description"] for i in data["incomes"]] == [
+        "Contrato parcelado (1/3)",
+        "Contrato parcelado (2/3)",
+        "Contrato parcelado (3/3)",
+    ]
 
     list_res = client.get("/incomes/installment-groups", params={"account_id": account_id})
     assert list_res.status_code == 200
