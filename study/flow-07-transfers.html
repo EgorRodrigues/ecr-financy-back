@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 07 — Transferências</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0f14;
+        --panel: #121923;
+        --text: #e6edf3;
+        --muted: #a4b1c0;
+        --link: #7aa2ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --code: rgba(255, 255, 255, 0.06);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --panel: #f6f8fa;
+          --text: #1f2328;
+          --muted: #57606a;
+          --link: #0969da;
+          --border: rgba(31, 35, 40, 0.18);
+          --code: rgba(31, 35, 40, 0.06);
+        }
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      header {
+        padding: 18px 20px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      h2 {
+        margin: 18px 0 10px;
+        font-size: 16px;
+      }
+      h3 {
+        margin: 14px 0 8px;
+        font-size: 14px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 14px;
+        overflow-x: auto;
+      }
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92em;
+      }
+      ul {
+        margin: 8px 0 10px 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .kvs {
+        display: grid;
+        grid-template-columns: 190px 1fr;
+        gap: 8px 12px;
+        align-items: start;
+        margin: 0;
+      }
+      .kvs dt {
+        color: var(--muted);
+      }
+      .kvs dd {
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="./index.html">← Index</a>
+        <span class="muted">Fluxo 07</span>
+      </nav>
+      <h1>Transferências</h1>
+      <p class="muted">
+        Uma transferência cria 2 lançamentos: 1 <code>Expense</code> (saída) + 1 <code>Income</code>
+        (entrada), vinculados por <code>transfer_id</code>.
+      </p>
+    </header>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /transfers/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/transfers.py#L15-L102"
+                >transfers.py</a
+              >)
+            </dd>
+            <dt>Entrada</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/transfers.py#L8-L19"
+                >schemas/transfers.py:TransferCreate</a
+              >
+            </dd>
+            <dt>Persistência</dt>
+            <dd>Direto no router (não usa repository).</dd>
+            <dt>Vínculo</dt>
+            <dd>
+              Ambos registros recebem o mesmo <code>transfer_id</code> (UUID gerado no momento do POST).
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Regras e efeitos</h2>
+          <ul>
+            <li>
+              A transferência sempre cria <code>Expense.status=pago</code> e <code>Income.status=recebido</code>
+              e define <code>total_paid</code>/<code>total_received</code> igual ao <code>amount</code>.
+            </li>
+            <li>
+              Datas são “imediatas”: <code>issue_date</code>, <code>due_date</code> e
+              <code>payment_date/receipt_date</code> usam o mesmo <code>payload.date</code>.
+            </li>
+            <li>
+              A descrição padrão muda conforme o lado (para/de): “Transferência para X” (expense) e
+              “Transferência de Y” (income), se <code>payload.description</code> não for enviado.
+            </li>
+            <li>
+              O contato é inferido das contas: a expense usa <code>destination_account.contact_id</code>
+              e o income usa <code>source_account.contact_id</code>. Se faltar algum, retorna 400.
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <h2>Validações (falhas comuns)</h2>
+      <section class="panel">
+        <ul>
+          <li>Se <code>source_account_id</code> não existir: 404 “Source account not found”.</li>
+          <li>Se <code>destination_account_id</code> não existir: 404 “Destination account not found”.</li>
+          <li>Se as contas forem iguais: 400 “Cannot transfer to the same account”.</li>
+          <li>
+            Se a conta de destino não tiver <code>contact_id</code>: 400 exigindo contato para transferências.
+          </li>
+          <li>
+            Se a conta de origem não tiver <code>contact_id</code>: 400 exigindo contato para transferências.
+          </li>
+        </ul>
+        <p class="muted">
+          Referência:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/transfers.py#L17-L45"
+            >transfers.py (validações)</a
+          >.
+        </p>
+      </section>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as Router (/transfers)
+  participant Dep as get_db
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /transfers/ + payload
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+
+  API->>DB: SELECT Account(source_account_id)
+  API->>DB: SELECT Account(destination_account_id)
+  alt validações falham
+    API-->>Client: 400/404
+  else validações ok
+    API->>API: transfer_id = uuid4()
+    API->>DB: INSERT Expense (status=pago, total_paid=amount, transfer_id)
+    API->>DB: INSERT Income (status=recebido, total_received=amount, transfer_id)
+    API->>DB: COMMIT
+    API-->>Client: 201 {expense_id, income_id, transfer_id}
+  end
+        </pre>
+      </section>
+
+      <h2>Modelo do vínculo</h2>
+      <section class="panel">
+        <pre class="mermaid">
+flowchart LR
+  A[Account: source_account] -->|account_id| E[Expense]
+  B[Account: destination_account] -->|account_id| I[Income]
+  E ---|transfer_id| I
+
+  B -->|destination_account.contact_id| E
+  A -->|source_account.contact_id| I
+        </pre>
+        <p class="muted">
+          Campos: <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/expenses.py#L32-L70"
+            >models/expenses.py</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/incomes.py#L32-L70"
+            >models/incomes.py</a
+          >.
+        </p>
+      </section>
+
+      <h2>Impactos no restante do sistema</h2>
+      <section class="panel">
+        <ul>
+          <li>
+            A listagem de incomes ignora transferências:
+            <code>WHERE transfer_id IS NULL</code> em
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L53-L74"
+              >list_incomes</a
+            >.
+          </li>
+          <li>
+            A listagem de expenses não filtra <code>transfer_id</code>, então transfers podem aparecer junto
+            do “contas a pagar” dependendo do uso.
+          </li>
+        </ul>
+      </section>
+    </main>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+  </body>
+</html>

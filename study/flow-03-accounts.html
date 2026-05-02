@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 03 — Cadastro de Conta (Accounts)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0f14;
+        --panel: #121923;
+        --text: #e6edf3;
+        --muted: #a4b1c0;
+        --link: #7aa2ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --code: rgba(255, 255, 255, 0.06);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --panel: #f6f8fa;
+          --text: #1f2328;
+          --muted: #57606a;
+          --link: #0969da;
+          --border: rgba(31, 35, 40, 0.18);
+          --code: rgba(31, 35, 40, 0.06);
+        }
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      header {
+        padding: 18px 20px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      h2 {
+        margin: 18px 0 10px;
+        font-size: 16px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 14px;
+        overflow-x: auto;
+      }
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92em;
+      }
+      ul {
+        margin: 8px 0 10px 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .kvs {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 8px 12px;
+        align-items: start;
+        margin: 0;
+      }
+      .kvs dt {
+        color: var(--muted);
+      }
+      .kvs dd {
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="./index.html">← Index</a>
+        <span class="muted">Fluxo 03</span>
+      </nav>
+      <h1>Cadastro de Conta (Accounts)</h1>
+      <p class="muted">
+        Cria uma conta do tipo <code>bank</code>, <code>wallet</code> ou <code>credit_card</code>.
+      </p>
+    </header>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /accounts/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/accounts.py#L19-L26"
+                >accounts.py</a
+              >)
+            </dd>
+            <dt>Persistência</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/accounts.py#L11-L24"
+                >repositories/accounts.py:create_account</a
+              >
+            </dd>
+            <dt>Tabela</dt>
+            <dd>
+              <code>accounts</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/accounts.py#L11-L32"
+                >models/accounts.py</a
+              >)
+            </dd>
+            <dt>Isolamento por tenant</dt>
+            <dd>
+              A sessão já está no schema do tenant via
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/dependencies.py#L21-L44"
+                >get_db</a
+              >.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Validações e regras</h2>
+          <ul>
+            <li>
+              <code>closing_day</code> e <code>due_day</code> devem estar entre 1 e 31 (se informados).
+            </li>
+            <li>
+              <code>category_id</code> só é permitido quando <code>type=credit_card</code>
+              (validação existe no schema e é reforçada no repository).
+            </li>
+            <li>
+              Se a regra de <code>category_id</code> falhar no repository, o router converte para 400 e
+              faz <code>rollback</code>.
+            </li>
+          </ul>
+          <p class="muted">
+            Referências:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/accounts.py#L10-L36"
+              >schemas/accounts.py:AccountCreate</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/accounts.py#L11-L24"
+              >repositories/accounts.py:create_account</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/accounts)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (AccountCreate)
+  participant Repo as repositories.create_account
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /accounts/ (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload (dias e regra category_id)
+  alt Payload inválido (schema)
+    Val-->>API: erro
+    API-->>Client: 422 Unprocessable Entity
+  else Payload válido
+    Val-->>API: payload validado
+    API->>Repo: create_account(session, payload)
+    alt Regra inválida no repository
+      Repo-->>API: ValueError
+      API-->>Client: 400 Bad Request
+    else OK
+      Repo->>DB: INSERT accounts + COMMIT
+      Repo-->>API: AccountOut
+      API-->>Client: 200 OK + AccountOut
+    end
+  end
+        </pre>
+      </section>
+    </main>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+  </body>
+</html>

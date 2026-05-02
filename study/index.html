@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECR Financy Back — Estudos (Index)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0f14;
+        --panel: #121923;
+        --text: #e6edf3;
+        --muted: #a4b1c0;
+        --link: #7aa2ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --code: rgba(255, 255, 255, 0.06);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --panel: #f6f8fa;
+          --text: #1f2328;
+          --muted: #57606a;
+          --link: #0969da;
+          --border: rgba(31, 35, 40, 0.18);
+          --code: rgba(31, 35, 40, 0.06);
+        }
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      header {
+        padding: 28px 20px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      h2 {
+        margin: 22px 0 10px;
+        font-size: 16px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 14px;
+      }
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92em;
+      }
+      ol {
+        margin: 10px 0 0 20px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      footer {
+        padding: 20px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>ECR Financy Back — Estudos</h1>
+      <p class="muted">
+        Índice de fluxos e cadastros mapeados. Cada item aponta para uma página HTML dedicada.
+      </p>
+    </header>
+    <main>
+      <section class="panel">
+        <h2>Fluxos</h2>
+        <ol>
+          <li><a href="./flow-01-tenant.html">Fluxo 01 — Criação de tenant (provisionamento lazy)</a></li>
+          <li>
+            <a href="./flow-02-contacts.html">Fluxo 02 — Cadastro de Cliente/Fornecedor (Contacts)</a>
+          </li>
+          <li><a href="./flow-03-accounts.html">Fluxo 03 — Cadastro de Conta (Accounts)</a></li>
+          <li><a href="./flow-04-income-create.html">Fluxo 04 — Criação de Income</a></li>
+          <li><a href="./flow-05-expense-create.html">Fluxo 05 — Criação de Expense</a></li>
+          <li>
+            <a href="./flow-06-credit-card.html"
+              >Fluxo 06 — Cartão de Crédito (Fatura + Transações + Parcelamento)</a
+            >
+          </li>
+          <li><a href="./flow-07-transfers.html">Fluxo 07 — Transferências</a></li>
+        </ol>
+      </section>
+
+      <section class="panel" style="margin-top: 12px">
+        <h2>Resumos</h2>
+        <ol>
+          <li><a href="./cadastros-resumo.html">Resumo — Demais cadastros e módulos</a></li>
+        </ol>
+      </section>
+    </main>
+    <footer>
+      Dica: abra estas páginas pelo explorador de arquivos (clique duplo) ou via IDE usando links
+      <code>file:///</code>.
+    </footer>
+  </body>
+</html>

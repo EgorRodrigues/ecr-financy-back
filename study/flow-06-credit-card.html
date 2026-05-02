@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 06 — Cartão de Crédito (Fatura + Transações + Parcelamento)</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0f14;
+        --panel: #121923;
+        --text: #e6edf3;
+        --muted: #a4b1c0;
+        --link: #7aa2ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --code: rgba(255, 255, 255, 0.06);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --panel: #f6f8fa;
+          --text: #1f2328;
+          --muted: #57606a;
+          --link: #0969da;
+          --border: rgba(31, 35, 40, 0.18);
+          --code: rgba(31, 35, 40, 0.06);
+        }
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      header {
+        padding: 18px 20px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      h2 {
+        margin: 18px 0 10px;
+        font-size: 16px;
+      }
+      h3 {
+        margin: 14px 0 8px;
+        font-size: 14px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 14px;
+        overflow-x: auto;
+      }
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92em;
+      }
+      ul {
+        margin: 8px 0 10px 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .kvs {
+        display: grid;
+        grid-template-columns: 190px 1fr;
+        gap: 8px 12px;
+        align-items: start;
+        margin: 0;
+      }
+      .kvs dt {
+        color: var(--muted);
+      }
+      .kvs dd {
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="./index.html">← Index</a>
+        <span class="muted">Fluxo 06</span>
+      </nav>
+      <h1>Cartão de Crédito (Fatura + Transações + Parcelamento)</h1>
+      <p class="muted">
+        Este módulo amarra: <code>credit_card_transactions</code> → <code>credit_card_invoices</code> →
+        <code>expenses</code> (uma expense por fatura).
+      </p>
+    </header>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <h2>Visão geral</h2>
+          <dl class="kvs">
+            <dt>Transações</dt>
+            <dd>
+              <code>/credit-card-transactions</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_transactions.py"
+                >router</a
+              >)
+            </dd>
+            <dt>Faturas</dt>
+            <dd>
+              <code>/credit-card-invoices</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_invoices.py"
+                >router</a
+              >)
+            </dd>
+            <dt>Relação principal</dt>
+            <dd>
+              Cada transação pode ter <code>invoice_id</code>; cada fatura pode ter <code>expense_id</code>.
+            </dd>
+            <dt>Sincronização</dt>
+            <dd>
+              Alterações em <code>invoice.amount/status/due_date/payment_date</code> sincronizam na expense
+              ligada; mudanças no valor da fatura também atualizam <code>expense.amount</code>.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Pré-requisitos (configuração)</h2>
+          <ul>
+            <li>
+              A conta deve ser <code>type=credit_card</code> (ver regras do schema de accounts).
+            </li>
+            <li>
+              A conta precisa ter <code>closing_day</code> e <code>due_day</code> para o cálculo do período
+              da fatura (senão a criação automática de fatura falha).
+            </li>
+            <li>
+              Para criar fatura (manual ou automática), a conta precisa ter <code>contact_id</code>
+              vinculado (fornecedor do cartão). Caso contrário, a criação da fatura falha.
+            </li>
+            <li>
+              A conta pode ter <code>category_id</code> (apenas credit card) e isso é reutilizado na
+              expense criada para a fatura.
+            </li>
+          </ul>
+          <p class="muted">
+            Referências:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/accounts.py#L10-L36"
+              >schemas/accounts.py</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_invoices.py#L276-L308"
+              >ensure_invoice_for_transaction</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_invoices.py#L153-L197"
+              >create_invoice</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Fluxo A — Compra (1 transação)</h2>
+      <section class="panel">
+        <dl class="kvs">
+          <dt>Endpoint</dt>
+          <dd>
+            <code>POST /credit-card-transactions/</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_transactions.py#L38-L41"
+              >router</a
+            >)
+          </dd>
+          <dt>Regras</dt>
+          <dd>
+            Se <code>account_id</code> e <code>due_date</code> existirem, tenta garantir a fatura
+            correspondente e amarrar o <code>invoice_id</code> na transação; se a transação não estiver
+            <code>cancelado</code>, soma o <code>amount</code> na fatura.
+          </dd>
+          <dt>Falha na fatura</dt>
+          <dd>
+            Erros ao criar/atualizar fatura são capturados: a transação ainda é criada, mas sem
+            <code>invoice_id</code>.
+          </dd>
+        </dl>
+        <p class="muted">
+          Referência:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L91-L129"
+            >create_credit_card_transaction</a
+          >.
+        </p>
+        <h3>Diagrama</h3>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as Router (/credit-card-transactions)
+  participant Dep as get_db
+  participant Repo as create_credit_card_transaction
+  participant Inv as ensure_invoice_for_transaction
+  participant DB as Postgres
+
+  Client->>API: POST /credit-card-transactions/ + payload
+  API->>Dep: Depends(get_db)
+  API->>Repo: create_credit_card_transaction(session, payload)
+  alt payload tem account_id e due_date
+    Repo->>Inv: ensure_invoice_for_transaction(account_id, due_date)
+    Inv->>DB: (cria ou busca invoice e expense)
+    Repo->>DB: update_invoice_amount(+amount) se status != cancelado
+  else sem dados de invoice
+    Repo-->>Repo: invoice_id permanece null
+  end
+  Repo->>DB: INSERT credit_card_transactions + COMMIT
+  API-->>Client: CreditCardTransactionOut
+        </pre>
+      </section>
+
+      <h2>Fluxo B — Compra parcelada (installments)</h2>
+      <section class="panel">
+        <dl class="kvs">
+          <dt>Endpoint</dt>
+          <dd>
+            <code>POST /credit-card-transactions/installments</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_transactions.py#L68-L76"
+              >router</a
+            >)
+          </dd>
+          <dt>Regra</dt>
+          <dd><code>installments_total</code> precisa ser &gt;= 2 (senão 400).</dd>
+          <dt>Datas</dt>
+          <dd>
+            <code>first_due_date</code> (ou <code>issue_date</code>) + soma mês a mês; se o dia não existir
+            no mês alvo, ajusta para o último dia do mês.
+          </dd>
+          <dt>Arredondamento</dt>
+          <dd>
+            Divide <code>amount_total</code> por <code>N</code> com <code>ROUND_HALF_UP</code> em 2 casas;
+            a última parcela ajusta o resto para fechar o total.
+          </dd>
+          <dt>Impacto na fatura</dt>
+          <dd>
+            Cada parcela tenta garantir a fatura do seu <code>due_date</code> e soma o valor da parcela na
+            fatura (se status != cancelado).
+          </dd>
+        </dl>
+        <p class="muted">
+          Referência:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L158-L247"
+            >create_installment_transactions</a
+          >.
+        </p>
+        <h3>Diagrama</h3>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as Router (/credit-card-transactions)
+  participant Dep as get_db
+  participant Repo as create_installment_transactions
+  participant Inv as ensure_invoice_for_transaction
+  participant DB as Postgres
+
+  Client->>API: POST /credit-card-transactions/installments + payload
+  API->>Dep: Depends(get_db)
+  API->>Repo: create_installment_transactions(session, payload)
+  Repo->>DB: INSERT installment_group
+  loop parcela 1..N
+    Repo->>Repo: calcula due_date e installment_amount
+    Repo->>Inv: ensure_invoice_for_transaction(account_id, due_date)
+    Inv->>DB: (cria ou busca invoice e expense)
+    Repo->>DB: update_invoice_amount(+installment_amount) se status != cancelado
+    Repo->>DB: INSERT credit_card_transactions (com invoice_id)
+  end
+  Repo->>DB: COMMIT
+  API-->>Client: group + transactions
+        </pre>
+      </section>
+
+      <h2>Fluxo C — Gestão do parcelamento</h2>
+      <section class="panel">
+        <ul>
+          <li>
+            Listar grupos:
+            <code>GET /credit-card-transactions/installment-groups</code> (agregados e próximo vencimento)
+          </li>
+          <li>
+            Detalhar grupo:
+            <code>GET /credit-card-transactions/installment-groups/{group_id}</code> (parcelas ordenadas)
+          </li>
+          <li>
+            Cancelar grupo:
+            <code>POST /credit-card-transactions/installment-groups/{group_id}/cancel</code> marca cada
+            parcela como <code>cancelado</code> e, se ela tiver <code>invoice_id</code>, desconta o valor
+            da fatura.
+          </li>
+          <li>
+            Desativar grupo:
+            <code>POST /credit-card-transactions/installment-groups/{group_id}/deactivate</code> apenas
+            seta <code>active=false</code> no grupo e nas parcelas (não mexe no valor da fatura).
+          </li>
+        </ul>
+        <p class="muted">
+          Referências:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L269-L337"
+            >list_installment_groups</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L355-L376"
+            >cancel_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L378-L397"
+            >deactivate_installment_group</a
+          >.
+        </p>
+        <h3>Diagrama (cancelar vs desativar)</h3>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as Router (/credit-card-transactions/installment-groups)
+  participant Dep as get_db
+  participant Repo as (cancel|deactivate)_installment_group
+  participant DB as Postgres
+
+  Client->>API: POST /{group_id}/cancel ou /{group_id}/deactivate
+  API->>Dep: Depends(get_db)
+  API->>Repo: executa ação
+  alt cancel
+    Repo->>DB: SELECT transactions do grupo
+    Repo->>DB: para cada tx != cancelado, update_invoice_amount(-amount) e status=cancelado
+  else deactivate
+    Repo->>DB: group.active=false e tx.active=false
+  end
+  Repo->>DB: COMMIT
+  API-->>Client: group + transactions
+        </pre>
+      </section>
+
+      <h2>Fluxo D — Fatura (Invoice) e Expense automática</h2>
+      <section class="panel">
+        <dl class="kvs">
+          <dt>Criação manual</dt>
+          <dd>
+            <code>POST /credit-card-invoices/</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_invoices.py#L33-L42"
+              >router</a
+            >)
+          </dd>
+          <dt>Criação automática</dt>
+          <dd>
+            Chamando <code>ensure_invoice_for_transaction</code> ao criar transações (inclusive parceladas).
+          </dd>
+          <dt>Expense criada junto</dt>
+          <dd>
+            Ao criar uma fatura, o sistema cria uma <code>Expense</code> com descrição “Fatura Cartão ...”
+            e guarda o vínculo em <code>CreditCardInvoice.expense_id</code>.
+          </dd>
+          <dt>Fornecedor/categoria</dt>
+          <dd>
+            A <code>Expense</code> usa <code>contact_id</code> e <code>category_id</code> da conta do cartão.
+            Se a conta não tiver <code>contact_id</code>, a criação da fatura falha.
+          </dd>
+        </dl>
+        <p class="muted">
+          Referências:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_invoices.py#L153-L197"
+            >create_invoice</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_invoices.py#L254-L270"
+            >update_invoice_amount</a
+          >.
+        </p>
+        <h3>Diagrama (criação de fatura)</h3>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as Router (/credit-card-invoices)
+  participant Dep as get_db
+  participant Repo as create_invoice
+  participant DB as Postgres
+
+  Client->>API: POST /credit-card-invoices/ + payload
+  API->>Dep: Depends(get_db)
+  API->>Repo: create_invoice(session, payload)
+  Repo->>DB: valida account.contact_id
+  Repo->>DB: INSERT expenses (fatura)
+  Repo->>DB: INSERT credit_card_invoices (expense_id)
+  Repo-->>API: CreditCardInvoiceOut
+  API-->>Client: 201 Created
+        </pre>
+      </section>
+
+      <h2>Regras de negócio — validações e bloqueios</h2>
+      <section class="panel">
+        <ul>
+          <li>
+            Criação automática de fatura depende de <code>closing_day</code> e <code>due_day</code> na conta;
+            se faltar, <code>ensure_invoice_for_transaction</code> lança erro (e no create da transação esse
+            erro é capturado, criando a transação sem <code>invoice_id</code>).
+          </li>
+          <li>
+            Ao criar fatura, a ausência de <code>account.contact_id</code> impede o processo
+            (gera erro no endpoint de faturas e também pode impedir criação automática via transações).
+          </li>
+          <li>
+            A fatura tem unicidade por período: <code>(account_id, period_start, period_end)</code>.
+          </li>
+          <li>
+            Edição/remoção de <code>Expense</code> vinculada a fatura é bloqueada no módulo de expenses
+            (não permite update/delete se existir <code>CreditCardInvoice.expense_id = expense.id</code>).
+          </li>
+          <li>
+            Ao atualizar ou deletar uma transação, o sistema ajusta o valor da fatura pelo delta do
+            <code>amount</code> e/ou mudanças de status (<code>cancelado</code>).
+          </li>
+        </ul>
+        <p class="muted">
+          Referências:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_invoices.py#L276-L287"
+            >ensure_invoice_for_transaction (validação)</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/credit_card_invoices.py#L34-L38"
+            >UniqueConstraint da fatura</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L85-L129"
+            >bloqueio em expenses (update/delete)</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L406-L486"
+            >update_credit_card_transaction (delta da fatura)</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/credit_card_transactions.py#L520-L532"
+            >delete_credit_card_transaction</a
+          >.
+        </p>
+      </section>
+    </main>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+  </body>
+</html>

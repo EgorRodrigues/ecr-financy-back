@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 05 — Criação de Expense</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0b0f14;
+        --panel: #121923;
+        --text: #e6edf3;
+        --muted: #a4b1c0;
+        --link: #7aa2ff;
+        --border: rgba(255, 255, 255, 0.12);
+        --code: rgba(255, 255, 255, 0.06);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --panel: #f6f8fa;
+          --text: #1f2328;
+          --muted: #57606a;
+          --link: #0969da;
+          --border: rgba(31, 35, 40, 0.18);
+          --code: rgba(31, 35, 40, 0.06);
+        }
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+      }
+      header {
+        padding: 18px 20px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      h2 {
+        margin: 18px 0 10px;
+        font-size: 16px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 14px;
+        overflow-x: auto;
+      }
+      a {
+        color: var(--link);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--code);
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.92em;
+      }
+      ul {
+        margin: 8px 0 10px 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .kvs {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 8px 12px;
+        align-items: start;
+        margin: 0;
+      }
+      .kvs dt {
+        color: var(--muted);
+      }
+      .kvs dd {
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="./index.html">← Index</a>
+        <span class="muted">Fluxo 05</span>
+      </nav>
+      <h1>Criação de Expense</h1>
+      <p class="muted">Registro de saída financeira (pagamento esperado ou realizado).</p>
+    </header>
+    <main>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /expenses/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/expenses.py#L33-L36"
+                >expenses.py</a
+              >)
+            </dd>
+            <dt>Persistência</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L32-L52"
+                >repositories/expenses.py:create_expense</a
+              >
+            </dd>
+            <dt>Tabela</dt>
+            <dd>
+              <code>expenses</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/expenses.py"
+                >models/expenses.py</a
+              >)
+            </dd>
+            <dt>Campos centrais</dt>
+            <dd>
+              <code>amount</code>, <code>status</code>, <code>issue_date</code>, <code>account_id</code>,
+              <code>contact_id</code>, <code>description</code>.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Regras e efeitos</h2>
+          <ul>
+            <li>
+              Se <code>status=pago</code>, calcula automaticamente
+              <code>total_paid = amount + interest + fine - discount</code>.
+            </li>
+            <li>
+              Em update/delete existe uma trava: não permite alterar/remover expense vinculada a uma
+              fatura de cartão (ver <code>CreditCardInvoice.expense_id</code>).
+            </li>
+          </ul>
+          <p class="muted">
+            Referências:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/expenses.py#L13-L40"
+              >schemas/expenses.py:ExpenseCreate</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L32-L52"
+              >repositories/expenses.py:create_expense</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L85-L113"
+              >repositories/expenses.py:update_expense</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/expenses)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (ExpenseCreate)
+  participant Repo as repositories.create_expense
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /expenses/ (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload
+  alt Payload inválido
+    Val-->>API: erro
+    API-->>Client: 422 Unprocessable Entity
+  else Payload válido
+    Val-->>API: payload validado
+    API->>Repo: create_expense(session, payload)
+    Repo->>Repo: se status=pago, calcula total_paid
+    Repo->>DB: INSERT expenses + COMMIT
+    Repo-->>API: ExpenseOut
+    API-->>Client: 200 OK + ExpenseOut
+  end
+        </pre>
+      </section>
+
+      <h2>Variação: criação por parcelas</h2>
+      <section class="panel">
+        <dl class="kvs">
+          <dt>Endpoint</dt>
+          <dd>
+            <code>POST /expenses/installments</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/expenses.py#L57-L63"
+              >router</a
+            >)
+          </dd>
+          <dt>Regra</dt>
+          <dd><code>installments_total</code> precisa ser &gt;= 2.</dd>
+          <dt>Resultado</dt>
+          <dd>Cria um grupo + N expenses (1 por parcela), com arredondamento na última parcela.</dd>
+        </dl>
+        <h2>Detalhes (grupo e parcelas)</h2>
+        <ul>
+          <li>
+            Cria 1 registro de grupo (<code>ExpenseInstallmentGroup</code>) e, em seguida, cria
+            <code>N</code> expenses com <code>installment_group_id</code>, <code>installment_number</code>
+            e <code>installments_total</code>.
+          </li>
+          <li>
+            Data de vencimento: <code>first_due_date</code> (se não vier, usa <code>issue_date</code>) e
+            soma mês a mês; se o dia não existir no mês alvo, ajusta para o último dia do mês.
+          </li>
+          <li>
+            Valor por parcela: calcula <code>per_installment</code> com
+            <code>ROUND_HALF_UP</code> em 2 casas; a última parcela recebe o “resto” para garantir que a
+            soma feche exatamente em <code>amount_total</code>.
+          </li>
+          <li>
+            Se <code>status=pago</code>, calcula <code>total_paid</code> em cada parcela usando
+            <code>amount + interest + fine - discount</code>.
+          </li>
+        </ul>
+
+        <h2>Diagrama (criação por parcelas)</h2>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/expenses)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (ExpenseInstallmentPlanCreate)
+  participant Repo as repositories.create_installment_expenses
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /expenses/installments (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload (installments_total, etc.)
+  alt Payload inválido
+    Val-->>API: erro
+    API-->>Client: 422
+  else Payload válido
+    API->>Repo: create_installment_expenses(session, payload)
+    Repo->>DB: INSERT expense_installment_groups
+    loop parcela 1..N
+      Repo->>Repo: calcula due_date (add_months)
+      Repo->>Repo: calcula installment_amount (última parcela ajusta resto)
+      Repo->>Repo: se status=pago, calcula total_paid
+      Repo->>DB: INSERT expenses (com installment_group_id e installment_number)
+    end
+    Repo->>DB: COMMIT
+    Repo-->>API: group + expenses
+    API-->>Client: 200 OK
+  end
+        </pre>
+
+        <h2>Gestão do grupo</h2>
+        <ul>
+          <li>
+            Listar grupos:
+            <code>GET /expenses/installment-groups</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/expenses.py#L75-L85"
+              >router</a
+            >) calcula agregados (quantidades por status, total pago e próximo vencimento).
+          </li>
+          <li>
+            Detalhar grupo:
+            <code>GET /expenses/installment-groups/{group_id}</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/expenses.py#L65-L73"
+              >router</a
+            >) retorna grupo + lista de parcelas ordenadas.
+          </li>
+          <li>
+            Atualizar grupo:
+            <code>PUT /expenses/installment-groups/{group_id}</code> permite alterar
+            <code>description</code> e <code>active</code> do grupo.
+          </li>
+          <li>
+            Cancelar grupo:
+            <code>POST /expenses/installment-groups/{group_id}/cancel</code> marca como
+            <code>cancelado</code> apenas as parcelas que ainda não estão <code>pago</code> e limpa
+            <code>total_paid</code> dessas parcelas.
+          </li>
+          <li>
+            Desativar grupo:
+            <code>POST /expenses/installment-groups/{group_id}/deactivate</code> seta
+            <code>active=false</code> no grupo e em todas as parcelas.
+          </li>
+        </ul>
+
+        <h2>Diagrama (cancelar vs desativar)</h2>
+        <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as FastAPI Router (/expenses/installment-groups)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Repo as repositories.(cancel|deactivate)_installment_group
+  participant DB as Postgres
+
+  Client->>API: POST /{group_id}/cancel ou /{group_id}/deactivate (Bearer JWT)
+  API->>Auth: Depends(verify_token)
+  API->>Dep: Depends(get_db)
+  API->>Repo: executa ação
+  alt cancel
+    Repo->>DB: SELECT expenses WHERE installment_group_id=gid
+    Repo->>DB: para cada parcela != pago, status=cancelado e total_paid=NULL
+  else deactivate
+    Repo->>DB: group.active=false
+    Repo->>DB: para cada parcela, active=false
+  end
+  Repo->>DB: COMMIT
+  API-->>Client: group + expenses
+        </pre>
+        <p class="muted">
+          Referência:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L131-L221"
+            >repositories/expenses.py:create_installment_expenses</a
+          >.
+        </p>
+        <p class="muted">
+          Gestão do grupo:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L240-L313"
+            >list_installment_groups</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L223-L238"
+            >get_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L315-L329"
+            >update_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L331-L346"
+            >cancel_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/expenses.py#L348-L364"
+            >deactivate_installment_group</a
+          >.
+        </p>
+      </section>
+    </main>
+    <script>
+      mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+    </script>
+  </body>
+</html>
