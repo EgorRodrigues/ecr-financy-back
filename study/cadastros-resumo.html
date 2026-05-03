@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resumo — Demais cadastros e módulos</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Resumo — Cadastros e módulos</div>
+          <div class="brand-subtitle">Mapa rápido de endpoints e routers</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">cadastros-resumo.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Demais cadastros e módulos</h1>
+        <p>Mapa rápido dos endpoints principais (CRUD) além de Contacts e Accounts.</p>
+        <div class="pills">
+          <span class="pill">management/*</span>
+          <span class="pill">reports/*</span>
+          <span class="pill">Depends(get_db)</span>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Cadastros (CRUD)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Domínio</th>
+              <th>Endpoint</th>
+              <th>Router</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Categorias</td>
+              <td><code>/categories</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/categories.py"
+                  >categories.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Subcategorias</td>
+              <td><code>/subcategories</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/subcategories.py"
+                  >subcategories.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Centros de custo</td>
+              <td><code>/cost-centers</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/cost_centers.py"
+                  >cost_centers.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Faturas de cartão</td>
+              <td><code>/credit-card-invoices</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_invoices.py"
+                  >credit_card_invoices.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Transações de cartão</td>
+              <td><code>/credit-card-transactions</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/credit_card_transactions.py"
+                  >credit_card_transactions.py</a
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="muted" style="margin: 12px 0 0">
+          Observação: todos estes módulos usam <code>Depends(get_db)</code>, então operam dentro do
+          schema do tenant.
+        </p>
+      </section>
+
+      <section class="panel" style="margin-top: 12px">
+        <h2>Operações (não-CRUD puro)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Domínio</th>
+              <th>Endpoint</th>
+              <th>Router</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Transferências</td>
+              <td><code>/transfers</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/transfers.py"
+                  >transfers.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Conciliação</td>
+              <td><code>/reconciliation</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/reconciliation.py"
+                  >reconciliation.py</a
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Relatórios</td>
+              <td><code>/dashboard</code>, <code>/bank-statement</code>, <code>/financial-forecast</code></td>
+              <td>
+                <a
+                  href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/reports"
+                  >routers/reports</a
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="muted" style="margin: 12px 0 0">
+          Próximo passo do estudo: detalhar fluxo de <code>/transfers</code> e como ele cria
+          automaticamente um <code>Expense</code> + <code>Income</code>.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

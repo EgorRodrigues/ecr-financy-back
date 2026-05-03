@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECR Financy Back — Estudos (Index)</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">ECR Financy Back — Estudos</div>
+          <div class="brand-subtitle">Índice de fluxos e cadastros mapeados</div>
+        </div>
+        <div class="crumbs">
+          <span class="pill">study/index.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Documentação de Fluxos</h1>
+        <p>
+          Cada fluxo tem uma página com “mapa visual” (flowchart), diagrama de sequência e referências
+          clicáveis para o código.
+        </p>
+        <div class="pills">
+          <span class="pill">Mermaid</span>
+          <span class="pill">Links file:///</span>
+          <span class="pill">Multi-tenant</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>O que é o Financy</h2>
+        <div class="card">
+          <p>
+            O Financy é um sistema para organizar as finanças do dia a dia — tanto pessoais quanto de um
+            pequeno negócio. Ele ajuda você a registrar entradas e saídas, acompanhar contas, classificar
+            gastos e receitas por categorias e ter uma visão clara do seu dinheiro (o que entrou, o que
+            saiu e o que ainda está pendente).
+          </p>
+          <p class="muted">
+            Em outras palavras: é um lugar único para controlar receitas, despesas, contas bancárias,
+            cartões de crédito e transferências, com relatórios para acompanhar a saúde financeira.
+          </p>
+          <div class="pills">
+            <span class="pill">Controle de receitas e despesas</span>
+            <span class="pill">Cartão de crédito com fatura</span>
+            <span class="pill">Relatórios</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Módulos principais</h2>
+        <div class="grid2">
+          <div class="card">
+            <h3>Cadastros</h3>
+            <p class="muted">
+              Contas (banco/carteira/cartão), clientes/fornecedores e classificações (categorias,
+              subcategorias, centros de custo).
+            </p>
+          </div>
+          <div class="card">
+            <h3>Lançamentos</h3>
+            <p class="muted">
+              Receitas (Income) e despesas (Expense), com opção de parcelamento e status (pendente,
+              recebido/pago, cancelado).
+            </p>
+          </div>
+          <div class="card">
+            <h3>Cartão de crédito</h3>
+            <p class="muted">
+              Transações vinculadas à fatura, parcelamento de compras e geração de uma despesa automática
+              da fatura para facilitar o pagamento.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Transferências</h3>
+            <p class="muted">
+              Movimentação entre contas com criação automática de uma saída e uma entrada, mantendo o
+              vínculo entre os dois lados.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Relatórios</h3>
+            <p class="muted">
+              Visões consolidadas como dashboard, extrato bancário e previsões (para acompanhar período,
+              categorias e tendências).
+            </p>
+          </div>
+          <div class="card">
+            <h3>Multiusuário (tenant)</h3>
+            <p class="muted">
+              Cada usuário tem seus dados isolados, evitando mistura de informações e permitindo uso em
+              múltiplas contas/pessoas no mesmo sistema.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Como você se beneficia</h2>
+        <div class="card">
+          <ul>
+            <li>
+              Clareza do fluxo de caixa: entenda rapidamente o que está pendente e o que já foi pago/recebido.
+            </li>
+            <li>
+              Organização por categorias: identifique onde você mais gasta e onde mais recebe.
+            </li>
+            <li>
+              Controle do cartão de crédito: acompanhe faturas, limite e compras parceladas sem planilhas.
+            </li>
+            <li>
+              Planejamento: use relatórios para tomar decisões (cortar custos, renegociar, priorizar pagamentos).
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Fluxos</h2>
+        <div class="grid2">
+          <div class="card">
+            <h3><a href="./flow-01-tenant.html">Fluxo 01 — Criação de tenant</a></h3>
+            <p class="muted">Provisionamento lazy do schema por usuário.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-02-contacts.html">Fluxo 02 — Cliente/Fornecedor (Contacts)</a></h3>
+            <p class="muted">Cadastro e validação de CPF/CNPJ por tipo de pessoa.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-03-accounts.html">Fluxo 03 — Conta (Accounts)</a></h3>
+            <p class="muted">Regras de conta de cartão (category_id, dias de fechamento/vencimento).</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-04-income-create.html">Fluxo 04 — Income</a></h3>
+            <p class="muted">Criação simples e por parcelas (installments).</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-05-expense-create.html">Fluxo 05 — Expense</a></h3>
+            <p class="muted">Criação simples e por parcelas (installments) + travas por fatura.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-06-credit-card.html">Fluxo 06 — Cartão de Crédito</a></h3>
+            <p class="muted">Transações, faturas, parcelamento e expense automática da fatura.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./flow-07-transfers.html">Fluxo 07 — Transferências</a></h3>
+            <p class="muted">Cria Expense + Income vinculados por transfer_id.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./cadastros-resumo.html">Resumo — Demais cadastros</a></h3>
+            <p class="muted">Mapa rápido de módulos CRUD e operações.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        Dica: abra estas páginas pelo explorador de arquivos (clique duplo) ou via IDE usando links
+        <code>file:///</code>.
+      </div>
+    </main>
+  </body>
+</html>
