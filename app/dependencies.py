@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.security import decode_token, verify_token
+from app.core.security import verify_token
 from app.db.postgres import ensure_tenant_schema, get_engine, sessionmaker
 
 

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 04 — Criação de Income</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 04 — Income</div>
+          <div class="brand-subtitle">Criação simples e por parcelas</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-04-income-create.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Criação de Income</h1>
+        <p>Registro de entrada financeira (recebimento esperado ou realizado).</p>
+        <div class="pills">
+          <span class="pill">POST /incomes/</span>
+          <span class="pill">POST /incomes/installments</span>
+          <span class="pill">total_received</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Criação simples</strong>
+              <span><code>POST /incomes/</code> valida payload e cria 1 registro em <code>incomes</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Total recebido</strong>
+              <span>Se <code>status=recebido</code>, calcula <code>total_received</code> automaticamente.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Commit e retorno</strong>
+              <span>Persiste e retorna <code>IncomeOut</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Criação por parcelas</strong>
+              <span><code>POST /incomes/installments</code> cria 1 grupo + N incomes com datas mensais.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Gestão do grupo</strong>
+              <span>Listar, detalhar, atualizar, cancelar ou desativar o grupo de parcelas.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /incomes/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/incomes.py#L33-L36"
+                >incomes.py</a
+              >)
+            </dd>
+            <dt>Persistência</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L31-L51"
+                >repositories/incomes.py:create_income</a
+              >
+            </dd>
+            <dt>Tabela</dt>
+            <dd>
+              <code>incomes</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/incomes.py"
+                >models/incomes.py</a
+              >)
+            </dd>
+            <dt>Campos centrais</dt>
+            <dd>
+              <code>amount</code>, <code>status</code>, <code>issue_date</code>, <code>account_id</code>,
+              <code>contact_id</code>, <code>description</code>.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Regras e efeitos</h2>
+          <ul>
+            <li>
+              Se <code>status=recebido</code>, calcula automaticamente
+              <code>total_received = amount + interest + fine - discount</code>.
+            </li>
+            <li>
+              Se <code>status</code> não for <code>recebido</code>, <code>total_received</code> permanece
+              como veio no payload (ou <code>null</code>).
+            </li>
+            <li>
+              A listagem de incomes exclui registros de transferência:
+              <code>WHERE transfer_id IS NULL</code> (impacta o que “aparece” nas telas, não a criação).
+            </li>
+          </ul>
+          <p class="muted">
+            Referências:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/incomes.py#L9-L36"
+              >schemas/incomes.py:IncomeCreate</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L31-L51"
+              >repositories/incomes.py:create_income</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L53-L74"
+              >repositories/incomes.py:list_incomes</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/incomes)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (IncomeCreate)
+  participant Repo as repositories.create_income
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /incomes/ (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload
+  alt Payload inválido
+    Val-->>API: erro
+    API-->>Client: 422 Unprocessable Entity
+  else Payload válido
+    Val-->>API: payload validado
+    API->>Repo: create_income(session, payload)
+    Repo->>Repo: se status=recebido, calcula total_received
+    Repo->>DB: INSERT incomes + COMMIT
+    Repo-->>API: IncomeOut
+    API-->>Client: 200 OK + IncomeOut
+  end
+          </pre>
+        </div>
+      </section>
+
+      <h2>Variação: criação por parcelas</h2>
+      <section class="panel">
+        <dl class="kvs">
+          <dt>Endpoint</dt>
+          <dd>
+            <code>POST /incomes/installments</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/incomes.py#L57-L63"
+              >router</a
+            >)
+          </dd>
+          <dt>Regra</dt>
+          <dd><code>installments_total</code> precisa ser &gt;= 2.</dd>
+          <dt>Resultado</dt>
+          <dd>Cria um grupo + N incomes (1 por parcela), com arredondamento na última parcela.</dd>
+        </dl>
+        <h2>Detalhes (grupo e parcelas)</h2>
+        <ul>
+          <li>
+            Cria 1 registro de grupo (<code>IncomeInstallmentGroup</code>) e, em seguida, cria
+            <code>N</code> incomes com <code>installment_group_id</code>, <code>installment_number</code>
+            e <code>installments_total</code>.
+          </li>
+          <li>
+            Data de vencimento: <code>first_due_date</code> (se não vier, usa <code>issue_date</code>) e
+            soma mês a mês; se o dia não existir no mês alvo, ajusta para o último dia do mês.
+          </li>
+          <li>
+            Valor por parcela: calcula <code>per_installment</code> com
+            <code>ROUND_HALF_UP</code> em 2 casas; a última parcela recebe o “resto” para garantir que a
+            soma feche exatamente em <code>amount_total</code>.
+          </li>
+          <li>
+            Se <code>status=recebido</code>, calcula <code>total_received</code> em cada parcela usando
+            <code>amount + interest + fine - discount</code>.
+          </li>
+        </ul>
+
+        <h2>Diagrama (criação por parcelas)</h2>
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/incomes)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (IncomeInstallmentPlanCreate)
+  participant Repo as repositories.create_installment_incomes
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /incomes/installments (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload (installments_total, etc.)
+  alt Payload inválido
+    Val-->>API: erro
+    API-->>Client: 422
+  else Payload válido
+    API->>Repo: create_installment_incomes(session, payload)
+    Repo->>DB: INSERT income_installment_groups
+    loop parcela 1..N
+      Repo->>Repo: calcula due_date (add_months)
+      Repo->>Repo: calcula installment_amount (última parcela ajusta resto)
+      Repo->>Repo: se status=recebido, calcula total_received
+      Repo->>DB: INSERT incomes (com installment_group_id e installment_number)
+    end
+    Repo->>DB: COMMIT
+    Repo-->>API: group + incomes
+    API-->>Client: 200 OK
+  end
+          </pre>
+        </div>
+
+        <h2>Gestão do grupo</h2>
+        <ul>
+          <li>
+            Listar grupos:
+            <code>GET /incomes/installment-groups</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/incomes.py#L75-L85"
+              >router</a
+            >) calcula agregados (quantidades por status, total recebido e próximo vencimento).
+          </li>
+          <li>
+            Detalhar grupo:
+            <code>GET /incomes/installment-groups/{group_id}</code>
+            (<a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/incomes.py#L65-L73"
+              >router</a
+            >) retorna grupo + lista de parcelas ordenadas.
+          </li>
+          <li>
+            Atualizar grupo:
+            <code>PUT /incomes/installment-groups/{group_id}</code> permite alterar
+            <code>description</code> e <code>active</code> do grupo.
+          </li>
+          <li>
+            Cancelar grupo:
+            <code>POST /incomes/installment-groups/{group_id}/cancel</code> marca como
+            <code>cancelado</code> apenas as parcelas que ainda não estão <code>recebido</code> e limpa
+            <code>total_received</code> dessas parcelas.
+          </li>
+          <li>
+            Desativar grupo:
+            <code>POST /incomes/installment-groups/{group_id}/deactivate</code> seta
+            <code>active=false</code> no grupo e em todas as parcelas.
+          </li>
+        </ul>
+
+        <h2>Diagrama (cancelar vs desativar)</h2>
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente
+  participant API as FastAPI Router (/incomes/installment-groups)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Repo as repositories.(cancel|deactivate)_installment_group
+  participant DB as Postgres
+
+  Client->>API: POST /{group_id}/cancel ou /{group_id}/deactivate (Bearer JWT)
+  API->>Auth: Depends(verify_token)
+  API->>Dep: Depends(get_db)
+  API->>Repo: executa ação
+  alt cancel
+    Repo->>DB: SELECT incomes WHERE installment_group_id=gid
+    Repo->>DB: para cada parcela != recebido, status=cancelado e total_received=NULL
+  else deactivate
+    Repo->>DB: group.active=false
+    Repo->>DB: para cada parcela, active=false
+  end
+  Repo->>DB: COMMIT
+  API-->>Client: group + incomes
+          </pre>
+        </div>
+        <p class="muted">
+          Referência:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L113-L203"
+            >repositories/incomes.py:create_installment_incomes</a
+          >.
+        </p>
+        <p class="muted">
+          Gestão do grupo:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L224-L295"
+            >list_installment_groups</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L205-L222"
+            >get_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L297-L311"
+            >update_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L313-L330"
+            >cancel_installment_group</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/incomes.py#L332-L348"
+            >deactivate_installment_group</a
+          >.
+        </p>
+      </section>
+    </main>
+    <script src="./assets/study.js"></script>
+  </body>
+</html>
