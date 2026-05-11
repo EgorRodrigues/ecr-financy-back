@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 08 — Previsão Financeira (Financial Forecast)</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 08 — Previsão Financeira</div>
+          <div class="brand-subtitle">Como o backend monta a projeção de entradas e saídas</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-08-financial-forecast.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Previsão Financeira (Financial Forecast)</h1>
+        <p>
+          Esta página explica o arquivo
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L12-L202"
+            >financial_forecast.py</a
+          >
+          de forma detalhada e visual.
+        </p>
+        <div class="pills">
+          <span class="pill">Income + Expense</span>
+          <span class="pill">Período</span>
+          <span class="pill">Status projetado/confirmado</span>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>O que este arquivo faz</h2>
+        <div class="card">
+          <p>
+            A função <code>get_financial_forecast(session, start_date, end_date)</code> monta uma lista de
+            itens de previsão (<code>ForecastItem</code>) combinando:
+          </p>
+          <ul>
+            <li>Receitas (<code>Income</code>) dentro do período</li>
+            <li>Despesas (<code>Expense</code>) dentro do período</li>
+            <li>Categoria (nome da <code>Category</code>) quando existir</li>
+          </ul>
+          <p class="muted">
+            O resultado final é uma linha do tempo (ordenada por mês) de “entradas” e “saídas”, marcando
+            se cada item já aconteceu (confirmado) ou ainda é esperado (projetado).
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Ajusta datas</strong>
+              <span>Normaliza <code>start_date</code> e <code>end_date</code> para cobrir “meses financeiros”.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Define mês</strong>
+              <span>Converte cada data em uma chave <code>YYYY-MM</code> via <code>get_period_str</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Busca receitas</strong>
+              <span>Seleciona incomes pendentes/recebidos no período (data efetiva = receipt/due).</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Busca despesas</strong>
+              <span>Seleciona expenses pendentes/pagas no período (data efetiva = payment/due).</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Enriquece com categoria</strong>
+              <span>Outer join com Category; lida com SQLite x Postgres na comparação de UUID.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Normaliza e ordena</strong>
+              <span>Mapeia status para projetado/confirmado, remove datas nulas e ordena por mês.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>Diagrama (visão geral)</h2>
+        <div class="diagram">
+          <pre class="mermaid">
+flowchart TD
+  A["start_date/end_date"] --> B["Ajuste de período"]
+  B --> C["Consulta Income"]
+  B --> D["Consulta Expense"]
+  C --> E["ForecastItem(type=income)"]
+  D --> F["ForecastItem(type=expense)"]
+  E --> G["Merge results"]
+  F --> G
+  G --> H["Ordena por month"]
+  H --> I["Retorna lista"]
+          </pre>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Entradas e saída</h2>
+        <div class="grid2">
+          <div class="panel">
+            <h3>Entrada</h3>
+            <dl class="kvs">
+              <dt>session</dt>
+              <dd>Session SQLAlchemy já “apontada” para o schema do tenant.</dd>
+              <dt>start_date</dt>
+              <dd>Data inicial solicitada.</dd>
+              <dt>end_date</dt>
+              <dd>Data final solicitada.</dd>
+            </dl>
+          </div>
+          <div class="panel">
+            <h3>Saída</h3>
+            <dl class="kvs">
+              <dt>retorno</dt>
+              <dd>Lista de <code>ForecastItem</code> contendo <code>month</code>, <code>type</code>, <code>amount</code>, <code>status</code>, etc.</dd>
+              <dt>order</dt>
+              <dd>Ordenado por <code>month</code> (<code>YYYY-MM</code>).</dd>
+            </dl>
+            <p class="muted">
+              Referência: <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L12-L202"
+                >financial_forecast.py</a
+              >.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1) Ajuste de período (“mês financeiro”)</h2>
+        <div class="card">
+          <p>
+            A função primeiro “ajusta” <code>start_date</code> e <code>end_date</code> para garantir que o
+            período coberto seja consistente para agregação mensal.
+          </p>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L17-L51"
+              >ajuste de datas</a
+            >.
+          </p>
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart LR
+  S["start_date"] --> SA{"start_date.day >= 1?"}
+  SA -->|sim| S1["start_date = dia 1 do mês atual"]
+  SA -->|não| S2["start_date = dia 1 do mês anterior"]
+
+  E["end_date"] --> EA{"end_date.day >= 26?"}
+  EA -->|sim| E1["end_date = dia 1 do próximo mês"]
+  EA -->|não| E2["end_date = dia 1 do mês atual"]
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>2) Como o mês (<code>YYYY-MM</code>) é calculado</h2>
+        <div class="card">
+          <p>
+            O helper <code>get_period_str(d)</code> transforma uma data em uma string no formato
+            <code>YYYY-MM</code>. Ele contém uma regra que “empurra” o mês para frente se
+            <code>day &gt;= start_day</code> (neste arquivo, <code>start_day</code> é 1).
+          </p>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L52-L68"
+              >get_period_str</a
+            >.
+          </p>
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart LR
+  D["date d"] --> X{"d.day >= start_day"}
+  X -->|sim| M["month += 1 (com ajuste ano)"]
+  X -->|não| N["mantém month"]
+  M --> O["retorna YYYY-MM"]
+  N --> O
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>3) Consulta de receitas (Income)</h2>
+        <div class="card">
+          <p>
+            A consulta de receitas usa duas “colunas calculadas”:
+          </p>
+          <ul>
+            <li>
+              <strong>Data efetiva</strong>:
+              se a income está <code>recebido</code> e tem <code>receipt_date</code>, usa ela; caso contrário,
+              usa <code>due_date</code>.
+            </li>
+            <li>
+              <strong>Valor efetivo</strong>:
+              se <code>recebido</code>, usa <code>total_received</code> (ou <code>amount</code> se estiver nulo);
+              caso contrário usa <code>amount</code>.
+            </li>
+          </ul>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L69-L140"
+              >bloco Incomes</a
+            >.
+          </p>
+          <div class="diagram">
+            <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant DB as Postgres
+  participant Q as Query Incomes
+  participant R as results[]
+
+  Q->>DB: SELECT incomes + category (outer join)
+  DB-->>Q: rows
+  loop cada row
+    Q->>Q: date = receipt_date se recebido, senão due_date
+    Q->>Q: amount = total_received/amount
+    Q->>R: adiciona ForecastItem(type=income, status=confirmado/projetado)
+  end
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>4) Consulta de despesas (Expense)</h2>
+        <div class="card">
+          <p>
+            O bloco de despesas é equivalente ao de receitas, mas com as colunas:
+          </p>
+          <ul>
+            <li>
+              <strong>Data efetiva</strong>:
+              se está <code>pago</code> e tem <code>payment_date</code>, usa ela; caso contrário usa <code>due_date</code>.
+            </li>
+            <li>
+              <strong>Valor efetivo</strong>:
+              se está <code>pago</code>, usa <code>total_paid</code> (ou <code>amount</code> se estiver nulo); caso contrário usa <code>amount</code>.
+            </li>
+          </ul>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L141-L197"
+              >bloco Expenses</a
+            >.
+          </p>
+          <div class="diagram">
+            <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant DB as Postgres
+  participant Q as Query Expenses
+  participant R as results[]
+
+  Q->>DB: SELECT expenses + category (outer join)
+  DB-->>Q: rows
+  loop cada row
+    Q->>Q: date = payment_date se pago, senão due_date
+    Q->>Q: amount = total_paid/amount
+    Q->>R: adiciona ForecastItem(type=expense, status=confirmado/projetado)
+  end
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5) Compatibilidade: SQLite vs Postgres (join por UUID)</h2>
+        <div class="card">
+          <p>
+            O arquivo detecta o dialeto do banco. Se for SQLite, ele faz join usando cast para texto
+            (<code>UUID = TEXT</code>). Se for Postgres, faz join normal (<code>UUID = UUID</code>).
+          </p>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L88-L100"
+              >dialect check + join_cond</a
+            >.
+          </p>
+          <div class="diagram">
+            <pre class="mermaid">
+flowchart LR
+  A[session.get_bind().dialect.name] --> B{sqlite?}
+  B -->|sim| C[Income.category_id == cast(Category.id, Text)]
+  B -->|sim| D[Expense.category_id == cast(Category.id, Text)]
+  B -->|não| E[Income.category_id == Category.id]
+  B -->|não| F[Expense.category_id == Category.id]
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>6) Montagem do resultado e ordenação</h2>
+        <div class="card">
+          <ul>
+            <li>Ignora linhas com <code>date</code> nula.</li>
+            <li>Mapeia status: <code>recebido/pago</code> → <code>confirmado</code>, pendente → <code>projetado</code>.</li>
+            <li>Usa “Sem Categoria” quando não há categoria associada.</li>
+            <li>Ordena pelo campo <code>month</code> (string <code>YYYY-MM</code>).</li>
+          </ul>
+          <p class="muted">
+            Referência: <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/financial_forecast.py#L122-L201"
+              >montagem + sort</a
+            >.
+          </p>
+        </div>
+      </section>
+    </main>
+    <script src="./assets/study.js"></script>
+  </body>
+</html>
