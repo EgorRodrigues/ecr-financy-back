@@ -4,12 +4,8 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    POETRY_VERSION=1.8.3 \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_CREATE=false
-
-# Add poetry to PATH
-ENV PATH="$POETRY_HOME/bin:$PATH"
+    UV_LINK_MODE=copy \
+    PATH="/root/.local/bin:$PATH"
 
 # Install system dependencies
 RUN apt-get update \
@@ -19,17 +15,17 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
+# Install UV
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml poetry.lock ./
+# Copy files needed for dependency installation
+COPY pyproject.toml uv.lock README.md ./
 
 # Install dependencies
-RUN poetry install --no-root --no-interaction --no-ansi
+RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY . .
@@ -38,4 +34,4 @@ COPY . .
 EXPOSE 8000
 
 # Command to run the application
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
