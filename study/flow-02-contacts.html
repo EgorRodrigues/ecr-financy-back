@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 02 — Cadastro de Cliente/Fornecedor</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 02 — Cliente/Fornecedor (Contacts)</div>
+          <div class="brand-subtitle">Cadastro e validação de CPF/CNPJ</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-02-contacts.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Cadastro de Cliente/Fornecedor (Contacts)</h1>
+        <p>Cadastro de um contato do tipo <code>customer</code> ou <code>supplier</code>.</p>
+        <div class="pills">
+          <span class="pill">POST /contacts/</span>
+          <span class="pill">CPF/CNPJ</span>
+          <span class="pill">Pydantic validators</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Request autenticado</strong>
+              <span>Router recebe <code>POST /contacts/</code> com JWT válido.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Seleciona tenant</strong>
+              <span><code>get_db</code> garante schema e ajusta <code>search_path</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Valida e normaliza</strong>
+              <span><code>person_type</code> é normalizado e CPF/CNPJ validado (se existir).</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Persiste contato</strong>
+              <span>Cria <code>contacts</code>, faz <code>commit</code> e retorna <code>ContactOut</code>.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /contacts/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/contacts.py#L18-L21"
+                >contacts.py</a
+              >)
+            </dd>
+            <dt>Persistência</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/contacts.py#L11-L21"
+                >repositories/contacts.py:create_contact</a
+              >
+            </dd>
+            <dt>Tabela</dt>
+            <dd>
+              <code>contacts</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/contacts.py#L11-L30"
+                >models/contacts.py</a
+              >)
+            </dd>
+            <dt>Isolamento por tenant</dt>
+            <dd>
+              A sessão já está “apontada” para o schema do tenant por
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/dependencies.py#L21-L44"
+                >get_db</a
+              >.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Validações</h2>
+          <ul>
+            <li>
+              <code>person_type</code> normaliza sinônimos: <code>pf</code>/<code>fisica</code> →
+              <code>individual</code>, <code>pj</code>/<code>juridica</code> → <code>company</code>.
+            </li>
+            <li>
+              Se <code>document</code> for informado, valida CPF/CNPJ conforme <code>person_type</code>
+              (<code>ValueError</code> → 422).
+            </li>
+            <li>
+              Não há checagem de duplicidade (ex.: documento/email) no fluxo atual; é um insert direto.
+            </li>
+          </ul>
+          <p class="muted">
+            Referência:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/contacts.py#L52-L85"
+              >schemas/contacts.py:ContactCreate</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/contacts)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (ContactCreate)
+  participant Repo as repositories.create_contact
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /contacts/ (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (garante schema + SET search_path)
+  API->>Val: Valida/normaliza payload
+  alt Payload inválido (ex.: CPF/CNPJ)
+    Val-->>API: erro (ValueError)
+    API-->>Client: 422 Unprocessable Entity
+  else Payload válido
+    Val-->>API: payload validado
+    API->>Repo: create_contact(session, payload)
+    Repo->>DB: INSERT contacts + COMMIT
+    Repo-->>API: ContactOut
+    API-->>Client: 200 OK + ContactOut
+  end
+          </pre>
+        </div>
+      </section>
+    </main>
+    <script src="./assets/study.js"></script>
+  </body>
+</html>

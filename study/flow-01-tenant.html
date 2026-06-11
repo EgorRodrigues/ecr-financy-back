@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 01 — Criação de tenant</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 01 — Criação de tenant</div>
+          <div class="brand-subtitle">Provisionamento lazy do schema por usuário</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-01-tenant.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Criação de um novo tenant (provisionamento lazy)</h1>
+        <p>O schema do tenant é criado automaticamente no primeiro acesso ao banco por um usuário.</p>
+        <div class="pills">
+          <span class="pill">Depends(get_db)</span>
+          <span class="pill">tenant_&lt;sub&gt;</span>
+          <span class="pill">Alembic upgrade head</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Request autenticado</strong>
+              <span>Qualquer endpoint com <code>Depends(get_db)</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Resolve tenant</strong>
+              <span>Calcula <code>tenant_&lt;sub_sem_hifen&gt;</code> a partir do JWT.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Provisiona schema</strong>
+              <span>Se não existir, cria schema e roda migrações Alembic.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Aponta a sessão</strong>
+              <span>Executa <code>SET search_path</code> para o schema do tenant.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Fluxo do endpoint</strong>
+              <span>CRUD/relatórios seguem usando a mesma sessão.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>O que é “tenant”</dt>
+            <dd>Um schema Postgres por usuário: <code>tenant_&lt;sub_sem_hifen&gt;</code>.</dd>
+            <dt>Como é criado</dt>
+            <dd>
+              Não existe endpoint explícito de “criar tenant”. A criação ocorre automaticamente no
+              primeiro uso do banco pelo usuário.
+            </dd>
+            <dt>Onde ocorre</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/dependencies.py#L21-L44"
+                >dependencies.py:get_db</a
+              >
+              +<br />
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/db/postgres.py#L35-L63"
+                >postgres.py:ensure_tenant_schema</a
+              >
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Interações que disparam</h2>
+          <p class="muted">
+            Qualquer chamada HTTP autenticada a um endpoint que injeta
+            <code>session: Session = Depends(get_db)</code>, desde que o schema do usuário ainda não
+            exista no banco.
+          </p>
+          <ul>
+            <li>
+              Cliente faz request com <code>Authorization: Bearer &lt;jwt&gt;</code> contendo
+              <code>sub</code>
+            </li>
+            <li>O handler usa <code>Depends(get_db)</code></li>
+            <li>
+              Se <code>tenant_&lt;sub_sem_hifen&gt;</code> não existe, o backend cria o schema e roda
+              as migrações
+            </li>
+          </ul>
+          <p class="muted">
+            Exemplos de endpoints estão em
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/main.py#L50-L73"
+              >main.py</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant DB as Postgres
+  participant Alembic as Alembic (upgrade head)
+
+  Client->>API: Request HTTP (Bearer JWT)
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>Dep: schema_name = "tenant_" + sub.replace("-", "")
+  Dep->>DB: SELECT schema exists?
+  alt Schema NÃO existe (novo tenant)
+    Dep->>DB: CREATE SCHEMA tenant_...
+    Dep->>Alembic: command.upgrade(head) com target_schema=tenant_...
+    Alembic->>DB: CREATE SCHEMA IF NOT EXISTS "tenant_..."
+    Alembic->>DB: SET search_path TO "tenant_...", public
+    Alembic->>DB: Cria/atualiza tabelas + alembic_version no schema
+  else Schema já existe
+    Dep-->>DB: (nenhuma criação)
+  end
+  Dep->>DB: SET search_path TO tenant_...
+  Dep-->>API: Session (apontando para o schema do tenant)
+  API-->>Client: Response (fluxo normal do endpoint)
+          </pre>
+        </div>
+        <p class="muted">
+          Referências:
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/dependencies.py#L11-L44"
+            >dependencies.py</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/db/postgres.py#L14-L63"
+            >postgres.py</a
+          >,
+          <a
+            href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/alembic/env.py#L55-L86"
+            >alembic/env.py</a
+          >.
+        </p>
+      </section>
+
+      <h2>Observações</h2>
+      <section class="panel">
+        <ul>
+          <li>
+            O “tenant id” é derivado do <code>sub</code> do JWT (não existe tabela <code>tenants</code>).
+          </li>
+          <li>
+            O script em
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/scripts/migrate_tenants.py#L47-L84"
+              >migrate_tenants.py</a
+            >
+            só aplica migrações em schemas existentes com prefixo <code>tenant_</code>.
+          </li>
+        </ul>
+      </section>
+    </main>
+    <script src="./assets/study.js"></script>
+  </body>
+</html>

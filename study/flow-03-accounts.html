@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fluxo 03 — Cadastro de Conta (Accounts)</title>
+    <link rel="stylesheet" href="./assets/study.css" />
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-title">Fluxo 03 — Cadastro de Conta (Accounts)</div>
+          <div class="brand-subtitle">Bank, wallet e credit_card</div>
+        </div>
+        <div class="crumbs">
+          <a href="./index.html">Index</a>
+          <span class="pill">flow-03-accounts.html</span>
+        </div>
+      </div>
+    </header>
+    <main class="container">
+      <section class="hero">
+        <h1>Cadastro de Conta (Accounts)</h1>
+        <p>Cria uma conta do tipo <code>bank</code>, <code>wallet</code> ou <code>credit_card</code>.</p>
+        <div class="pills">
+          <span class="pill">POST /accounts/</span>
+          <span class="pill">credit_card rules</span>
+          <span class="pill">closing_day/due_day</span>
+        </div>
+      </section>
+      <section class="section">
+        <h2>Mapa visual</h2>
+        <ol class="flow-steps">
+          <li>
+            <div>
+              <strong>Request autenticado</strong>
+              <span>Router recebe <code>POST /accounts/</code> com JWT válido.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Seleciona tenant</strong>
+              <span><code>get_db</code> garante schema e ajusta <code>search_path</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Valida regras do schema</strong>
+              <span>Dias 1..31 e <code>category_id</code> apenas para <code>credit_card</code>.</span>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Persiste conta</strong>
+              <span>Cria <code>accounts</code>, faz <code>commit</code> e retorna <code>AccountOut</code>.</span>
+            </div>
+          </li>
+        </ol>
+      </section>
+      <div class="grid">
+        <section class="panel">
+          <h2>Resumo</h2>
+          <dl class="kvs">
+            <dt>Endpoint</dt>
+            <dd>
+              <code>POST /accounts/</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/routers/management/accounts.py#L19-L26"
+                >accounts.py</a
+              >)
+            </dd>
+            <dt>Persistência</dt>
+            <dd>
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/accounts.py#L11-L24"
+                >repositories/accounts.py:create_account</a
+              >
+            </dd>
+            <dt>Tabela</dt>
+            <dd>
+              <code>accounts</code>
+              (<a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/models/accounts.py#L11-L32"
+                >models/accounts.py</a
+              >)
+            </dd>
+            <dt>Isolamento por tenant</dt>
+            <dd>
+              A sessão já está no schema do tenant via
+              <a
+                href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/dependencies.py#L21-L44"
+                >get_db</a
+              >.
+            </dd>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <h2>Validações e regras</h2>
+          <ul>
+            <li>
+              <code>closing_day</code> e <code>due_day</code> devem estar entre 1 e 31 (se informados).
+            </li>
+            <li>
+              <code>category_id</code> só é permitido quando <code>type=credit_card</code>
+              (validação existe no schema e é reforçada no repository).
+            </li>
+            <li>
+              Se a regra de <code>category_id</code> falhar no repository, o router converte para 400 e
+              faz <code>rollback</code>.
+            </li>
+          </ul>
+          <p class="muted">
+            Referências:
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/schemas/accounts.py#L10-L36"
+              >schemas/accounts.py:AccountCreate</a
+            >,
+            <a
+              href="file:///Users/egorrodrigues/dev/financy_project/ecr-financy-back/app/repositories/accounts.py#L11-L24"
+              >repositories/accounts.py:create_account</a
+            >.
+          </p>
+        </section>
+      </div>
+
+      <h2>Diagrama (sequência)</h2>
+      <section class="panel">
+        <div class="diagram">
+          <pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor Client as Cliente (Front/CLI)
+  participant API as FastAPI Router (/accounts)
+  participant Auth as verify_token/decode_token
+  participant Dep as dependencies.get_db
+  participant Val as Pydantic (AccountCreate)
+  participant Repo as repositories.create_account
+  participant DB as Postgres (schema do tenant)
+
+  Client->>API: POST /accounts/ (Bearer JWT) + payload
+  API->>Auth: Depends(verify_token)
+  Auth-->>API: payload (sub=UUID do usuário)
+  API->>Dep: Depends(get_db)
+  Dep->>DB: (SET search_path tenant_...)
+  API->>Val: Valida payload (dias e regra category_id)
+  alt Payload inválido (schema)
+    Val-->>API: erro
+    API-->>Client: 422 Unprocessable Entity
+  else Payload válido
+    Val-->>API: payload validado
+    API->>Repo: create_account(session, payload)
+    alt Regra inválida no repository
+      Repo-->>API: ValueError
+      API-->>Client: 400 Bad Request
+    else OK
+      Repo->>DB: INSERT accounts + COMMIT
+      Repo-->>API: AccountOut
+      API-->>Client: 200 OK + AccountOut
+    end
+  end
+          </pre>
+        </div>
+      </section>
+    </main>
+    <script src="./assets/study.js"></script>
+  </body>
+</html>
