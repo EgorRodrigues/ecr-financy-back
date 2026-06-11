@@ -4,7 +4,7 @@ Backend FastAPI para Controle Financeiro com arquitetura multi-tenant.
 
 ## Pré-requisitos
 
-- Python ≥ 3.11
+- Python ≥ 3.13
 - UV (gerenciador de pacotes e ambiente)
 - Docker e Docker Compose (opcional, para execução containerizada)
 

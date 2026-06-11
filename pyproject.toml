@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Backend FastAPI para Controle Financeiro"
 authors = [{name = "Egor Rodrigues", email = "me@egor.soy"}]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.123.5",
     "uvicorn[standard]>=0.38.0",
